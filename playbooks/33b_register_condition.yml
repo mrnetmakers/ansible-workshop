@@ -1,0 +1,22 @@
+---
+- name: Test service and react
+  hosts: managed
+  gather_facts: false
+
+  tasks:
+    - name: Check HTTP service
+      ansible.builtin.command:
+        cmd: systemctl is-active httpd
+      register: httpd_status
+      changed_when: false
+      failed_when: false
+
+    - name: HTTP is running
+      ansible.builtin.debug:
+        msg: Apache is running.
+      when: httpd_status.rc == 0
+
+    - name: HTTP is not running
+      ansible.builtin.debug:
+        msg: Apache is NOT running.
+      when: httpd_status.rc != 0

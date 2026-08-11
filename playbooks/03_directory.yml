@@ -1,0 +1,11 @@
+---
+- name: Create student directory
+  hosts: managed
+  gather_facts: false
+
+  tasks:
+    - name: Create workshop directory
+      ansible.builtin.file:
+        path: "/tmp/ansible-{{ ansible_user }}"
+        state: directory
+        mode: "0755"

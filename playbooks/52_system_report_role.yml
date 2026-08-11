@@ -1,0 +1,7 @@
+---
+- name: Run the system report role
+  hosts: managed
+  become: true
+
+  roles:
+    - system_report

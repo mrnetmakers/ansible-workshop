@@ -1,0 +1,7 @@
+---
+- name: Run the webserver role
+  hosts: managed
+  become: true
+
+  roles:
+    - webserver

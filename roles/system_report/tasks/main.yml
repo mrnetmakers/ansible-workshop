@@ -1,0 +1,39 @@
+---
+- name: Determine uptime
+  ansible.builtin.command:
+    cmd: uptime
+  register: system_uptime
+  changed_when: false
+
+- name: Display uptime
+  ansible.builtin.debug:
+    msg: "{{ inventory_hostname }}: {{ system_uptime.stdout }}"
+
+- name: Find largest entries under /etc
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      du -ah /etc 2>/dev/null | sort -rh | head -5
+    executable: /bin/bash
+  register: largest_files
+  changed_when: false
+
+- name: Display largest entries
+  ansible.builtin.debug:
+    var: largest_files.stdout_lines
+
+- name: Determine root filesystem usage
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      df -P / | tail -1 | awk '{print $5}' | tr -d '%'
+    executable: /bin/bash
+  register: root_usage
+  changed_when: false
+
+- name: Display warning for high filesystem usage
+  ansible.builtin.debug:
+    msg: >-
+      WARNING: root filesystem utilization on {{ inventory_hostname }}
+      is {{ root_usage.stdout }}%.
+  when: root_usage.stdout | int >= system_report_disk_warning

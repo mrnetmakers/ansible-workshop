@@ -1,0 +1,11 @@
+---
+- name: Manage Apache
+  hosts: managed
+  become: true
+
+  tasks:
+    - name: Ensure Apache is enabled and started
+      ansible.builtin.service:
+        name: httpd
+        enabled: true
+        state: started

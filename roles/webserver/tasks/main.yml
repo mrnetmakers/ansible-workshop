@@ -1,0 +1,20 @@
+---
+- name: Install web server
+  ansible.builtin.package:
+    name: "{{ webserver_package }}"
+    state: present
+
+- name: Ensure web service is enabled and running
+  ansible.builtin.service:
+    name: "{{ webserver_service }}"
+    enabled: true
+    state: started
+
+- name: Deploy web page
+  ansible.builtin.template:
+    src: index.html.j2
+    dest: "{{ webserver_document_root }}/index.html"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart webserver

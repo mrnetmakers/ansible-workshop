@@ -1,0 +1,13 @@
+---
+- name: Create workshop file
+  hosts: managed
+  gather_facts: false
+
+  tasks:
+    - name: Create information file
+      ansible.builtin.copy:
+        dest: "/tmp/ansible-{{ ansible_user }}/README.txt"
+        content: |
+          This file is managed by Ansible.
+          Managed host: {{ inventory_hostname }}
+        mode: "0644"

@@ -1,0 +1,19 @@
+---
+- name: Advanced conditions
+  hosts: managed
+  gather_facts: true
+
+  vars:
+    minimum_memory_mb: 1024
+    supported_distributions:
+      - RedHat
+      - Rocky
+      - AlmaLinux
+
+  tasks:
+    - name: Host meets application requirements
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }} meets the requirements."
+      when:
+        - ansible_facts['distribution'] in supported_distributions
+        - ansible_facts['memtotal_mb'] >= minimum_memory_mb

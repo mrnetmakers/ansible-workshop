@@ -1,0 +1,19 @@
+---
+- name: Register command output
+  hosts: managed
+  gather_facts: false
+
+  tasks:
+    - name: Get kernel version
+      ansible.builtin.command:
+        cmd: uname -r
+      register: kernel_result
+      changed_when: false
+
+    - name: Display complete result
+      ansible.builtin.debug:
+        var: kernel_result
+
+    - name: Display only stdout
+      ansible.builtin.debug:
+        msg: "Kernel = {{ kernel_result.stdout }}"

@@ -1,0 +1,19 @@
+---
+- name: Explore Ansible facts
+  hosts: managed
+  gather_facts: true
+
+  tasks:
+    - name: Display operating system
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }} runs {{ ansible_facts['distribution'] }}
+          {{ ansible_facts['distribution_version'] }}
+
+    - name: Display memory
+      ansible.builtin.debug:
+        msg: "Total memory: {{ ansible_facts['memtotal_mb'] }} MB"
+
+    - name: Display processor architecture
+      ansible.builtin.debug:
+        msg: "Architecture: {{ ansible_facts['architecture'] }}"

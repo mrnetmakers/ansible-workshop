@@ -1,0 +1,10 @@
+---
+- name: Determine remote hostnames
+  hosts: managed
+  gather_facts: false
+
+  tasks:
+    - name: Execute hostname
+      ansible.builtin.command:
+        cmd: hostname
+      changed_when: false

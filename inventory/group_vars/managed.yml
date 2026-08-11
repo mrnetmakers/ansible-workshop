@@ -1,0 +1,5 @@
+---
+# Replace studXX with your assigned student account.
+ansible_user: studXX
+
+deployment_environment: training

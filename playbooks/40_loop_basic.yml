@@ -1,0 +1,13 @@
+---
+- name: Basic loops
+  hosts: managed
+  gather_facts: false
+
+  tasks:
+    - name: Display fruits
+      ansible.builtin.debug:
+        msg: "Current item is {{ item }}"
+      loop:
+        - apple
+        - banana
+        - orange

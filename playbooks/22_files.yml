@@ -1,0 +1,23 @@
+---
+- name: Manage files and directories
+  hosts: managed
+  become: true
+
+  tasks:
+    - name: Create application directory
+      ansible.builtin.file:
+        path: /opt/training
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Create information file
+      ansible.builtin.copy:
+        dest: /opt/training/info.txt
+        content: |
+          Managed by Ansible
+          Host: {{ inventory_hostname }}
+        owner: root
+        group: root
+        mode: "0644"

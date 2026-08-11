@@ -1,0 +1,10 @@
+---
+webserver:
+  package: httpd
+  service: httpd
+  port: 80
+  document_root: /var/www/html
+
+web_packages:
+  - httpd
+  - curl

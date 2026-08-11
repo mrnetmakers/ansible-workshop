@@ -1,0 +1,7 @@
+---
+- name: Run the training application role
+  hosts: managed
+  become: true
+
+  roles:
+    - training_app

@@ -1,0 +1,11 @@
+---
+- name: Configure workshop systems
+  hosts: managed
+  become: true
+
+  roles:
+    - webserver
+    - training_app
+    - system_report
+    # Uncomment this after completing the final challenge:
+    # - server_baseline

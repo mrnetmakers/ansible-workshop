@@ -1,0 +1,15 @@
+---
+- name: Learn Ansible variables
+  hosts: managed
+  gather_facts: false
+
+  vars:
+    course_name: Ansible Deep Dive
+    course_room: Linux Lab
+    course_day: Tuesday
+
+  tasks:
+    - name: Display variables
+      ansible.builtin.debug:
+        msg: >-
+          Welcome to {{ course_name }} in {{ course_room }} on {{ course_day }}.

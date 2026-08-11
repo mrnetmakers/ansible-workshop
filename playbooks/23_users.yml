@@ -1,0 +1,13 @@
+---
+- name: Manage training user
+  hosts: managed
+  become: true
+
+  tasks:
+    - name: Create demo user
+      ansible.builtin.user:
+        name: ansibledemo
+        comment: Ansible Workshop Account
+        shell: /bin/bash
+        create_home: true
+        state: present

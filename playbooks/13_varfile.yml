@@ -1,0 +1,16 @@
+---
+- name: Read variables from external file
+  hosts: managed
+  gather_facts: false
+
+  vars_files:
+    - ../vars/webserver.yml
+
+  tasks:
+    - name: Display web server configuration
+      ansible.builtin.debug:
+        msg: |
+          Package: {{ webserver.package }}
+          Service: {{ webserver.service }}
+          Port: {{ webserver.port }}
+          Root: {{ webserver.document_root }}

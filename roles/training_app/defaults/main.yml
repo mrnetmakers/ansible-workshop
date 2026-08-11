@@ -1,0 +1,10 @@
+---
+training_app:
+  environment: development
+  port: 8080
+  debug: true
+
+training_app_admins:
+  - alice
+  - bob
+  - charlie

@@ -1,0 +1,29 @@
+---
+- name: Advanced loops
+  hosts: managed
+  become: true
+
+  vars:
+    training_users:
+      - name: appdev
+        comment: Application Developer
+        shell: /bin/bash
+        create_home: true
+      - name: appops
+        comment: Application Operations
+        shell: /bin/bash
+        create_home: true
+      - name: appaudit
+        comment: Application Auditor
+        shell: /sbin/nologin
+        create_home: false
+
+  tasks:
+    - name: Create training accounts
+      ansible.builtin.user:
+        name: "{{ item.name }}"
+        comment: "{{ item.comment }}"
+        shell: "{{ item.shell }}"
+        create_home: "{{ item.create_home }}"
+        state: present
+      loop: "{{ training_users }}"

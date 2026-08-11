@@ -1,0 +1,8 @@
+---
+- name: Deploy training application configuration
+  ansible.builtin.template:
+    src: training-app.conf.j2
+    dest: /etc/training-app.conf
+    owner: root
+    group: root
+    mode: "0644"

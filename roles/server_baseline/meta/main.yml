@@ -1,0 +1,7 @@
+---
+galaxy_info:
+  author: Workshop Student
+  description: Ansible Deep-Dive workshop role
+  license: MIT
+  min_ansible_version: "2.14"
+dependencies: []

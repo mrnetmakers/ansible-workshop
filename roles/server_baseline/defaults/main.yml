@@ -1,0 +1,22 @@
+---
+# Final challenge defaults. Students should customize and extend these.
+baseline_packages:
+  - curl
+  - vim-enhanced
+  - tar
+  - tree
+
+baseline_directories:
+  - /opt/company
+  - /opt/company/scripts
+  - /opt/company/config
+
+baseline_users:
+  - name: appdev
+    shell: /bin/bash
+  - name: appops
+    shell: /bin/bash
+  - name: appaudit
+    shell: /sbin/nologin
+
+baseline_environment: training

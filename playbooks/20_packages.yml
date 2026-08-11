@@ -1,0 +1,13 @@
+---
+- name: Manage packages
+  hosts: managed
+  become: true
+
+  tasks:
+    - name: Install useful tools
+      ansible.builtin.package:
+        name:
+          - httpd
+          - curl
+          - vim-enhanced
+        state: present

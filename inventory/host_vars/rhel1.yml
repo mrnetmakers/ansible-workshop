@@ -1,0 +1,5 @@
+---
+training_app:
+  environment: development
+  port: 8081
+  debug: true

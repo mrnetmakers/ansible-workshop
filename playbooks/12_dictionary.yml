@@ -1,0 +1,20 @@
+---
+- name: Work with dictionaries
+  hosts: managed
+  gather_facts: false
+
+  vars:
+    webserver:
+      package: httpd
+      service: httpd
+      port: 80
+      document_root: /var/www/html
+
+  tasks:
+    - name: Display dictionary
+      ansible.builtin.debug:
+        var: webserver
+
+    - name: Display individual values
+      ansible.builtin.debug:
+        msg: "Package={{ webserver.package }}, port={{ webserver.port }}"

@@ -1,0 +1,8 @@
+---
+# FINAL CHALLENGE
+# Implement the server baseline here using modules, loops, variables,
+# conditionals, templates, register, and command/shell where appropriate.
+
+- name: Final challenge placeholder
+  ansible.builtin.debug:
+    msg: Implement the server_baseline role as described in README.md.

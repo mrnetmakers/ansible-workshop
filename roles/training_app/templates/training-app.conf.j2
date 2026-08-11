@@ -1,0 +1,17 @@
+# Managed by Ansible - manual modifications may be overwritten.
+
+[application]
+environment={{ training_app.environment }}
+port={{ training_app.port }}
+debug={{ training_app.debug | lower }}
+
+[server]
+hostname={{ inventory_hostname }}
+os={{ ansible_facts['distribution'] }}
+os_version={{ ansible_facts['distribution_version'] }}
+architecture={{ ansible_facts['architecture'] }}
+
+[administrators]
+{% for admin in training_app_admins %}
+admin={{ admin }}
+{% endfor %}

@@ -1,0 +1,18 @@
+---
+- name: Environment conditional
+  hosts: managed
+  gather_facts: false
+
+  vars:
+    environment: development
+
+  tasks:
+    - name: Development configuration
+      ansible.builtin.debug:
+        msg: Applying development settings
+      when: environment == "development"
+
+    - name: Production configuration
+      ansible.builtin.debug:
+        msg: Applying production settings
+      when: environment == "production"

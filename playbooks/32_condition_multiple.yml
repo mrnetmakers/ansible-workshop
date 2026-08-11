@@ -1,0 +1,15 @@
+---
+- name: Multiple conditions
+  hosts: managed
+  gather_facts: true
+
+  vars:
+    configure_web: true
+
+  tasks:
+    - name: Configure RHEL web server
+      ansible.builtin.debug:
+        msg: This host qualifies for web server configuration.
+      when:
+        - configure_web
+        - ansible_facts['os_family'] == "RedHat"

@@ -1,0 +1,12 @@
+---
+- name: Modify configuration file
+  hosts: managed
+  become: true
+
+  tasks:
+    - name: Add workshop marker to MOTD
+      ansible.builtin.lineinfile:
+        path: /etc/motd
+        line: This server is managed using Ansible.
+        create: true
+        mode: "0644"

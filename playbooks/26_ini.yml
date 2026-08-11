@@ -1,0 +1,29 @@
+---
+- name: Manage INI configuration
+  hosts: managed
+  become: true
+
+  tasks:
+    - name: Configure application environment
+      community.general.ini_file:
+        path: /etc/training-app.conf
+        section: application
+        option: environment
+        value: training
+        mode: "0644"
+
+    - name: Configure application debug setting
+      community.general.ini_file:
+        path: /etc/training-app.conf
+        section: application
+        option: debug
+        value: "false"
+        mode: "0644"
+
+    - name: Configure application port
+      community.general.ini_file:
+        path: /etc/training-app.conf
+        section: application
+        option: port
+        value: "8080"
+        mode: "0644"

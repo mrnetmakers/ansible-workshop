@@ -1,0 +1,13 @@
+---
+- name: Basic conditional
+  hosts: managed
+  gather_facts: false
+
+  vars:
+    install_webserver: true
+
+  tasks:
+    - name: Explain intended action
+      ansible.builtin.debug:
+        msg: The web server will be installed.
+      when: install_webserver
