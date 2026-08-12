@@ -131,8 +131,6 @@ You should now be able to explain the difference between:
 
 # 2. Learn YAML Syntax – Build Your First Playbook
 
-**Estimated time:** 30–40 minutes
-
 Ansible playbooks are written in **YAML**. Before we start configuring remote systems, we need to understand a few basic YAML concepts.
 
 Instead of learning YAML separately from Ansible, you will create a small playbook that defines different types of data and prints their values.
@@ -152,22 +150,10 @@ You will also create and execute your **first Ansible playbook**.
 
 ## 2.1 Create a directory for your workshop
 
-Make sure you are working in your home directory:
+Enter the workshop directory:
 
 ```bash
-cd ~
-```
-
-Create the workshop directory:
-
-```bash
-mkdir -p ansible-workshop/playbooks
-```
-
-Enter the directory:
-
-```bash
-cd ansible-workshop
+cd ~/ansible-workshop
 ```
 
 Verify your current location:
@@ -784,7 +770,7 @@ Congratulations — you have written and executed your first Ansible playbook.
 
 ---
 
-# 2.19 Student Challenge – Extend the data model
+# 2.19 Challenge – Extend the data model
 
 Do not copy an example for this exercise. Modify your playbook yourself.
 
@@ -815,6 +801,169 @@ packages:
 ```
 
 Print the complete list again.
+
+# 2.20 Bonus Challenge – Intentionally break YAML
+
+Understanding errors is an important part of learning Ansible.
+
+Make a copy of your working playbook:
+
+```bash
+cp playbooks/01_yaml_basics.yml playbooks/01_yaml_broken.yml
+```
+
+Open it:
+
+```bash
+vi playbooks/01_yaml_broken.yml
+```
+
+Find:
+
+```yaml
+    packages:
+      - httpd
+      - curl
+```
+
+Change it to:
+
+```yaml
+    packages:
+      - httpd
+        - curl
+```
+
+Now run:
+
+```bash
+ansible-playbook playbooks/01_yaml_broken.yml --syntax-check
+```
+
+Read the error message carefully.
+
+Try to identify:
+
+1. approximately where the problem occurred;
+2. what is wrong with the YAML structure;
+3. how Ansible reports YAML syntax errors.
+
+Fix the file and run the syntax check again.
+
+---
+
+# 2.21 What did we learn?
+
+You have already used the most important YAML data structures that you will encounter during the rest of this workshop:
+
+| Data type | Example | Typical Ansible use |
+|---|---|---|
+| String | `"httpd"` | Package names, usernames, paths, environments |
+| Number | `8080` | Ports, limits, timeouts, thresholds |
+| Boolean | `true` | Enable/disable functionality |
+| List | `[httpd, curl, tar]` | Packages, users, services, files |
+| Dictionary | `webserver: ...` | Structured configuration |
+| List of dictionaries | `training_users: ...` | Multiple structured objects |
+
+You do not need to memorize every YAML feature.
+
+For Ansible, the most important question is usually:
+
+> **What kind of data do I need to represent?**
+
+If it is one value, use a simple variable:
+
+```yaml
+environment: production
+```
+
+If it is multiple similar values, consider a list:
+
+```yaml
+packages:
+  - httpd
+  - curl
+  - tar
+```
+
+If several values belong together, consider a dictionary:
+
+```yaml
+webserver:
+  package: httpd
+  service: httpd
+  port: 80
+```
+
+If you have multiple objects and every object has several properties, a list of dictionaries is often the right choice:
+
+```yaml
+users:
+  - name: alice
+    shell: /bin/bash
+
+  - name: bob
+    shell: /bin/bash
+```
+
+You will encounter all of these structures again throughout the workshop.
+
+
+# 3. Understand and customize `ansible.cfg`
+
+Open the repository configuration:
+
+```bash
+cat ansible.cfg
+```
+
+It contains project-local settings such as:
+
+```ini
+[defaults]
+inventory = ./inventory/hosts.yml
+host_key_checking = False
+retry_files_enabled = False
+forks = 10
+timeout = 15
+roles_path = ./roles
+collections_path = ./collections
+```
+
+Check which configuration Ansible is using:
+
+```bash
+ansible --version
+```
+
+Look for the `config file` line.
+
+Inspect only settings that differ from defaults:
+
+```bash
+ansible-config dump --only-changed
+```
+
+## 3.1 Explore configuration documentation
+
+Run:
+
+```bash
+ansible-config list | less
+```
+
+Find settings for:
+
+- inventory;
+- forks;
+- timeout;
+- host key checking.
+
+### Discussion
+
+Why is a project-local `ansible.cfg` useful when automation is stored in Git?
+
+---
 
 # 4. Prepare SSH Key Authentication
 
@@ -1900,228 +2049,6 @@ shell
 ```
 
 Create a `debug` task that prints the new user's name and department.
-
----
-
-# 2.20 Bonus Challenge – Intentionally break YAML
-
-Understanding errors is an important part of learning Ansible.
-
-Make a copy of your working playbook:
-
-```bash
-cp playbooks/01_yaml_basics.yml playbooks/01_yaml_broken.yml
-```
-
-Open it:
-
-```bash
-vi playbooks/01_yaml_broken.yml
-```
-
-Find:
-
-```yaml
-    packages:
-      - httpd
-      - curl
-```
-
-Change it to:
-
-```yaml
-    packages:
-      - httpd
-        - curl
-```
-
-Now run:
-
-```bash
-ansible-playbook playbooks/01_yaml_broken.yml --syntax-check
-```
-
-Read the error message carefully.
-
-Try to identify:
-
-1. approximately where the problem occurred;
-2. what is wrong with the YAML structure;
-3. how Ansible reports YAML syntax errors.
-
-Fix the file and run the syntax check again.
-
----
-
-# 2.21 What did we learn?
-
-You have already used the most important YAML data structures that you will encounter during the rest of this workshop:
-
-| Data type | Example | Typical Ansible use |
-|---|---|---|
-| String | `"httpd"` | Package names, usernames, paths, environments |
-| Number | `8080` | Ports, limits, timeouts, thresholds |
-| Boolean | `true` | Enable/disable functionality |
-| List | `[httpd, curl, tar]` | Packages, users, services, files |
-| Dictionary | `webserver: ...` | Structured configuration |
-| List of dictionaries | `training_users: ...` | Multiple structured objects |
-
-You do not need to memorize every YAML feature.
-
-For Ansible, the most important question is usually:
-
-> **What kind of data do I need to represent?**
-
-If it is one value, use a simple variable:
-
-```yaml
-environment: production
-```
-
-If it is multiple similar values, consider a list:
-
-```yaml
-packages:
-  - httpd
-  - curl
-  - tar
-```
-
-If several values belong together, consider a dictionary:
-
-```yaml
-webserver:
-  package: httpd
-  service: httpd
-  port: 80
-```
-
-If you have multiple objects and every object has several properties, a list of dictionaries is often the right choice:
-
-```yaml
-users:
-  - name: alice
-    shell: /bin/bash
-
-  - name: bob
-    shell: /bin/bash
-```
-
-You will encounter all of these structures again throughout the workshop.
-
-## Next
-
-Now that you can write YAML and execute a basic playbook, we can create a proper Ansible project configuration and customize `ansible.cfg`.
-
----
-
-# 3. Understand and customize `ansible.cfg`
-
-Open the repository configuration:
-
-```bash
-cat ansible.cfg
-```
-
-It contains project-local settings such as:
-
-```ini
-[defaults]
-inventory = ./inventory/hosts.yml
-host_key_checking = False
-retry_files_enabled = False
-forks = 10
-timeout = 15
-roles_path = ./roles
-collections_path = ./collections
-```
-
-Check which configuration Ansible is using:
-
-```bash
-ansible --version
-```
-
-Look for the `config file` line.
-
-Inspect only settings that differ from defaults:
-
-```bash
-ansible-config dump --only-changed
-```
-
-## 3.1 Explore configuration documentation
-
-Run:
-
-```bash
-ansible-config list | less
-```
-
-Find settings for:
-
-- inventory;
-- forks;
-- timeout;
-- host key checking.
-
-### Discussion
-
-Why is a project-local `ansible.cfg` useful when automation is stored in Git?
-
----
-
-# 4. Prepare SSH key authentication
-
-## 4.1 Inspect your SSH directory
-
-```bash
-ls -la ~/.ssh
-```
-
-If you already have a training key approved by the instructor, use it. Otherwise create a new Ed25519 key:
-
-```bash
-ssh-keygen -t ed25519
-```
-
-Use the default path:
-
-```text
-~/.ssh/id_ed25519
-```
-
-Follow the instructor's policy for passphrases.
-
-Verify the files:
-
-```bash
-ls -l ~/.ssh/id_ed25519 ~/.ssh/id_ed25519.pub
-```
-
-`id_ed25519` is the private key. Never copy or share it.
-
-`id_ed25519.pub` is the public key and may be installed on remote systems.
-
-## 4.2 Install your public key on all three managed nodes
-
-Replace the addresses below with the real addresses supplied by the instructor and replace `studXX` with your username:
-
-```bash
-ssh-copy-id studXX@<RHEL1_IP>
-ssh-copy-id studXX@<RHEL2_IP>
-ssh-copy-id studXX@<RHEL3_IP>
-```
-
-Test all three hosts:
-
-```bash
-ssh studXX@<RHEL1_IP> hostname
-ssh studXX@<RHEL2_IP> hostname
-ssh studXX@<RHEL3_IP> hostname
-```
-
-The commands should run without requesting the remote account password for SSH authentication.
 
 ---
 
