@@ -969,7 +969,7 @@ Why is a project-local `ansible.cfg` useful when automation is stored in Git?
 
 Ansible normally connects to Linux managed hosts using SSH.
 
-In our lab environment, you have four RHEL systems:
+In our lab environment, you have three RHEL systems:
 
 ```text
 rhelmain    Ansible control node
@@ -997,7 +997,7 @@ stud03
 ...
 ```
 
-Your goal in this exercise is to configure SSH public-key authentication so that your `studXX` account on `rhelmain` can connect directly to the same `studXX` account on all four managed hosts.
+Your goal in this exercise is to configure SSH public-key authentication so that your `studXX` account on `rhelmain` can connect directly to the same `studXX` account on all three managed hosts.
 
 At the end of the exercise, the following should work **without entering a password**:
 
@@ -1724,7 +1724,7 @@ hostname
 whoami
 ```
 
-Now test all four managed hosts:
+Now test all three managed hosts:
 
 ```bash
 ssh studXX@rhel1 hostname
@@ -1750,7 +1750,7 @@ ssh studXX@rhel2 whoami
 ssh studXX@rhel3 whoami
 ```
 
-All four commands should return your student username.
+All three commands should return your student username.
 
 ---
 
@@ -2005,7 +2005,7 @@ Once that works without a password, we can configure Ansible to use exactly the 
 
 # 4.19 Exercise complete
 
-Before continuing, verify all four hosts one final time:
+Before continuing, verify all three hosts one final time:
 
 ```bash
 ssh studXX@rhel1 "hostname; whoami"
@@ -2024,7 +2024,7 @@ rhel3
 stud01
 ```
 
-If all four connections work without entering a password, your SSH environment is ready for Ansible.
+If all three connections work without entering a password, your SSH environment is ready for Ansible.
 
 
 # 5. Inventory and First Remote Execution
@@ -2090,7 +2090,7 @@ and place all three hosts into that group.
 
 ---
 
-## 5.2 Verify that the hostnames can be resolved
+## 5.2 Determine the IP addresses
 
 Before adding hosts to the inventory, verify that `rhelmain` can resolve the names of the managed systems.
 
@@ -2188,49 +2188,7 @@ If this does not work, fix the SSH problem before continuing with Ansible.
 
 ---
 
-## 5.4 Determine the IP addresses
-
-Now determine the IP address for each managed host.
-
-Run:
-
-```bash
-getent hosts rhel1
-getent hosts rhel2
-getent hosts rhel3
-```
-
-Write down the addresses.
-
-For example:
-
-```text
-rhel1    192.168.10.101
-rhel2    192.168.10.102
-rhel3    192.168.10.103
-```
-
-Your actual addresses may be different.
-
-You can also verify an address from the remote system itself:
-
-```bash
-ssh studXX@rhel1 "hostname -I"
-```
-
-or:
-
-```bash
-ssh studXX@rhel1 "ip -4 addr show"
-```
-
-`hostname -I` may display more than one address if the system has multiple network interfaces.
-
-For this exercise, use the address associated with the interface used for communication between `rhelmain` and the managed host.
-
----
-
-## 5.5 Create the inventory directory
+## 5.4 Create the inventory directory
 
 Check whether the inventory directory already exists:
 
@@ -2272,7 +2230,7 @@ Replace the example IP addresses with the addresses from your environment.
 
 ---
 
-## 5.6 Understand the inventory structure
+## 5.5 Understand the inventory structure
 
 The inventory contains several levels.
 
@@ -2344,7 +2302,7 @@ This separation is useful because playbooks can use stable, readable names even 
 
 ---
 
-## 5.7 Why not just use IP addresses as hostnames?
+## 5.6 Why not just use IP addresses as hostnames?
 
 Technically, you could create an inventory like:
 
@@ -2374,13 +2332,9 @@ Meaningful inventory names are therefore preferable.
 
 ---
 
-## 5.8 Check your Ansible configuration
+## 5.7 Check your Ansible configuration
 
-Your project-specific `ansible.cfg` should point to:
-
-```text
-./inventory/hosts.yml
-```
+Your project-specific `ansible.cfg` should point Ansible to the inventory file used for this workshop.
 
 Check:
 
@@ -2388,22 +2342,22 @@ Check:
 cat ansible.cfg
 ```
 
-You should have a setting similar to:
+You should see a setting similar to:
 
 ```ini
 [defaults]
 inventory = ./inventory/hosts.yml
 ```
 
-You should also have your own student account configured as the remote user, for example:
+This tells Ansible to use:
 
-```ini
-remote_user = stud01
+```text
+inventory/hosts.yml
 ```
 
-If your configuration uses `studXX`, replace it with your actual username.
+as the default inventory for this project.
 
-You can verify which configuration file Ansible is using:
+You can verify which configuration file Ansible is currently using with:
 
 ```bash
 ansible --version
@@ -2419,7 +2373,44 @@ It should point to the `ansible.cfg` inside your workshop directory.
 
 ---
 
-## 5.9 Validate the inventory
+### Configure your remote user
+
+The SSH user for the managed hosts is **not configured in `ansible.cfg`**.
+
+For this workshop, the remote user is defined as a group variable for all hosts in the `managed` group.
+
+Open:
+
+```bash
+vi inventory/group_vars/managed.yml
+```
+
+You should find:
+
+```yaml
+---
+ansible_user: studXX
+```
+
+Replace:
+
+```text
+studXX
+```
+
+with your assigned student account.
+
+For example:
+
+```yaml
+---
+ansible_user: stud01
+```
+
+Save the file.
+
+
+## 5.8 Validate the inventory
 
 Before running anything remotely, ask Ansible to read the inventory.
 
@@ -2443,7 +2434,7 @@ You should see something similar to:
 This confirms that Ansible recognizes:
 
 - the `managed` group;
-- all four hosts.
+- all three hosts.
 
 If a host is missing, check your YAML indentation carefully.
 
@@ -2593,7 +2584,7 @@ Now run:
 ansible managed -m ansible.builtin.ping
 ```
 
-You should receive a successful result from all four hosts.
+You should receive a successful result from all three hosts.
 
 For example:
 
@@ -2738,7 +2729,7 @@ ansible managed \
   -a "cat /etc/redhat-release"
 ```
 
-Compare the output from all four hosts.
+Compare the output from all three hosts.
 
 ---
 
@@ -2828,7 +2819,7 @@ In our current inventory, this produces effectively the same result as:
 ansible managed -m ansible.builtin.ping
 ```
 
-because all four systems currently belong to the `managed` group.
+because all three systems currently belong to the `managed` group.
 
 Later, when the inventory contains multiple groups, `all` and `managed` may no longer mean the same thing.
 
@@ -2873,7 +2864,7 @@ Then execute it:
 ansible-playbook playbooks/02_remote_ping.yml
 ```
 
-You should receive successful results from all four managed hosts.
+You should receive successful results from all three managed hosts.
 
 ---
 
@@ -3284,7 +3275,7 @@ In the next exercise, you will work more deeply with **Ansible variables, lists,
 
 # 6. First playbooks
 
-The repository contains four introductory playbooks.
+The repository contains three introductory playbooks.
 
 ## 6.1 Connectivity playbook
 
@@ -3397,7 +3388,7 @@ ansible-playbook playbooks/11_lists.yml
 
 Add `tree` to the `packages` list.
 
-Add a task that prints the fourth item using its numeric list index.
+Add a task that prints the third item using its numeric list index.
 
 ## 7.3 Dictionaries
 
