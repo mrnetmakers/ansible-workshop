@@ -2078,7 +2078,6 @@ For this workshop, the managed systems are:
 rhel1
 rhel2
 rhel3
-rhel4
 ```
 
 We will create one group named:
@@ -2087,7 +2086,7 @@ We will create one group named:
 managed
 ```
 
-and place all four hosts into that group.
+and place all three hosts into that group.
 
 ---
 
@@ -2113,7 +2112,6 @@ Repeat this for all managed hosts:
 getent hosts rhel1
 getent hosts rhel2
 getent hosts rhel3
-getent hosts rhel4
 ```
 
 `getent hosts` is generally more useful than `ping` for this check because it directly shows which IP address the operating system resolves for a hostname.
@@ -2135,7 +2133,6 @@ Repeat if needed:
 ```bash
 ping -c 1 rhel2
 ping -c 1 rhel3
-ping -c 1 rhel4
 ```
 
 Do not worry if ICMP echo requests are blocked. In that case, the hostname may still resolve correctly even though `ping` does not receive a reply.
@@ -2171,7 +2168,6 @@ Repeat:
 ```bash
 ssh studXX@rhel2 hostname
 ssh studXX@rhel3 hostname
-ssh studXX@rhel4 hostname
 ```
 
 You should receive:
@@ -2179,7 +2175,6 @@ You should receive:
 ```text
 rhel2
 rhel3
-rhel4
 ```
 
 This checks more than DNS resolution. It verifies:
@@ -2203,7 +2198,6 @@ Run:
 getent hosts rhel1
 getent hosts rhel2
 getent hosts rhel3
-getent hosts rhel4
 ```
 
 Write down the addresses.
@@ -2214,7 +2208,6 @@ For example:
 rhel1    192.168.10.101
 rhel2    192.168.10.102
 rhel3    192.168.10.103
-rhel4    192.168.10.104
 ```
 
 Your actual addresses may be different.
@@ -2273,9 +2266,6 @@ all:
 
         rhel3:
           ansible_host: 192.168.10.103
-
-        rhel4:
-          ansible_host: 192.168.10.104
 ```
 
 Replace the example IP addresses with the addresses from your environment.
@@ -2315,7 +2305,6 @@ hosts:
   rhel1:
   rhel2:
   rhel3:
-  rhel4:
 ```
 
 For each host, we define:
@@ -2449,7 +2438,6 @@ You should see something similar to:
   |  |--rhel1
   |  |--rhel2
   |  |--rhel3
-  |  |--rhel4
 ```
 
 This confirms that Ansible recognizes:
@@ -2512,7 +2500,6 @@ Expected output:
     rhel1
     rhel2
     rhel3
-    rhel4
 ```
 
 Try a single host:
@@ -2626,10 +2613,6 @@ rhel3 | SUCCESS => {
     "ping": "pong"
 }
 
-rhel4 | SUCCESS => {
-    "changed": false,
-    "ping": "pong"
-}
 ```
 
 If one host fails while the others succeed, troubleshoot that host separately.
@@ -2814,7 +2797,7 @@ rhel2
 Try:
 
 ```bash
-ansible 'rhel2:rhel4' \
+ansible 'rhel2:rhel3' \
   -m ansible.builtin.command \
   -a "uptime"
 ```
@@ -3293,7 +3276,6 @@ rhelmain
    +------> rhel1
    +------> rhel2
    +------> rhel3
-   +------> rhel4
 ```
 
 ## Next
