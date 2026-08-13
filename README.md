@@ -2512,7 +2512,7 @@ Before making a change, always make sure your host pattern selects the systems y
 
 ---
 
-# 5.12 Your first remote Ansible connection
+## 5.12 Your first remote Ansible connection
 
 Now use Ansible's `ping` module.
 
@@ -2576,7 +2576,7 @@ It confirms that the basic Ansible communication path works.
 
 ---
 
-# 5.14 Ping all managed hosts
+## 5.14 Ping all managed hosts
 
 Now run:
 
@@ -2624,7 +2624,7 @@ The additional `-vv` option provides more information about what Ansible is doin
 
 ---
 
-# 5.15 Execute your first remote command
+## 5.15 Execute your first remote command
 
 Now run a real command on all managed hosts:
 
@@ -2733,7 +2733,7 @@ Compare the output from all three hosts.
 
 ---
 
-# 5.18 Target individual hosts
+## 5.18 Target individual hosts
 
 Ansible does not always have to target an entire group.
 
@@ -2766,7 +2766,7 @@ all
 
 ---
 
-# 5.19 Target multiple specific hosts
+## 5.19 Target multiple specific hosts
 
 You can also target multiple hosts with a pattern.
 
@@ -2797,7 +2797,7 @@ The quotes are a good habit because some shell characters used in Ansible host p
 
 ---
 
-# 5.20 Use all hosts
+## 5.20 Use all hosts
 
 The special group:
 
@@ -2825,7 +2825,7 @@ Later, when the inventory contains multiple groups, `all` and `managed` may no l
 
 ---
 
-# 5.21 Create your first remote playbook
+## 5.21 Create your first remote playbook
 
 So far, you have used **ad-hoc commands**.
 
@@ -2868,7 +2868,7 @@ You should receive successful results from all three managed hosts.
 
 ---
 
-# 5.22 Create a hostname playbook
+## 5.22 Create a hostname playbook
 
 Create:
 
@@ -2935,56 +2935,7 @@ changed
 
 ---
 
-# 5.23 Create a system information playbook
-
-Create:
-
-```bash
-vi playbooks/04_system_info.yml
-```
-
-Add:
-
-```yaml
----
-- name: Collect basic system information
-  hosts: managed
-  gather_facts: false
-
-  tasks:
-    - name: Display current user
-      ansible.builtin.command:
-        cmd: whoami
-      changed_when: false
-
-    - name: Display kernel version
-      ansible.builtin.command:
-        cmd: uname -r
-      changed_when: false
-
-    - name: Display system uptime
-      ansible.builtin.command:
-        cmd: uptime
-      changed_when: false
-```
-
-Check:
-
-```bash
-ansible-playbook playbooks/04_system_info.yml --syntax-check
-```
-
-Run:
-
-```bash
-ansible-playbook playbooks/04_system_info.yml
-```
-
-You have now converted several ad-hoc commands into a repeatable playbook.
-
----
-
-# 5.24 Create a file remotely
+## 5.23 Create a file remotely
 
 Now create a playbook that actually changes the remote systems.
 
@@ -3029,7 +2980,7 @@ because a file was created.
 
 ---
 
-## 5.25 Verify the file
+## 5.24 Verify the file
 
 Use an ad-hoc command:
 
@@ -3061,7 +3012,7 @@ The same playbook therefore generated host-specific content.
 
 ---
 
-# 5.26 Run the playbook a second time
+## 5.25 Run the playbook a second time
 
 Run again:
 
@@ -3095,7 +3046,7 @@ A well-written Ansible playbook can normally be executed repeatedly without maki
 
 ---
 
-# 5.27 Student Challenge
+## 5.26 Student Challenge
 
 Complete the following tasks yourself.
 
@@ -3186,7 +3137,7 @@ Be prepared to explain why the results are different.
 
 ---
 
-# 5.28 Useful troubleshooting commands
+## 5.27 Useful troubleshooting commands
 
 If something does not work, troubleshoot from the bottom up.
 
@@ -3238,7 +3189,7 @@ Try to identify which layer is failing before changing configuration.
 
 ---
 
-# 5.29 What did we learn?
+## 5.28 What did we learn?
 
 In this exercise, you learned how to:
 
