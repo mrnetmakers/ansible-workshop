@@ -70,7 +70,7 @@ which ansible
 ls -1 /usr/bin/ansible*
 ```
 
-Locate these tools if present:
+Verify these tools are present:
 
 - `ansible`
 - `ansible-config`
@@ -3046,7 +3046,7 @@ A well-written Ansible playbook can normally be executed repeatedly without maki
 
 ---
 
-## 5.26 Student Challenge
+## 5.26 Challenge
 
 Complete the following tasks yourself.
 
@@ -3224,7 +3224,7 @@ rhelmain
 
 In the next exercise, you will work more deeply with **Ansible variables, lists, dictionaries, and external variable files**.
 
-# 6. First playbooks
+# 6. Execute simple playbooks
 
 The repository contains three introductory playbooks.
 
@@ -3393,98 +3393,646 @@ Be able to explain these structures:
 
 ---
 
-# 8. Work with Ansible modules
+# 8. Work with Ansible Modules
 
-These exercises change the managed systems and require `sudo` access.
+In this unit, you will work with several commonly used Ansible modules.
 
-Before using a new module, inspect its documentation. Examples:
+These exercises modify the managed systems, for example by installing packages, starting services, creating directories, creating users, and modifying files below `/etc`.
+
+Before using a new module, get into the habit of checking its documentation.
+
+Examples:
 
 ```bash
 ansible-doc ansible.builtin.package
 ansible-doc ansible.builtin.service
 ansible-doc ansible.builtin.file
+ansible-doc ansible.builtin.copy
 ansible-doc ansible.builtin.user
 ansible-doc ansible.builtin.lineinfile
 ```
 
-## 8.1 Package module
+You do not need to memorize every module option. Being able to find and understand the documentation is more important.
+
+---
+
+## 8.1 Inspect the package playbook
+
+Start by looking at the first playbook:
+
+```bash
+cat playbooks/20_packages.yml
+```
+
+You should see that it contains:
+
+```yaml
+become: true
+```
+
+This tells Ansible that the tasks require elevated privileges.
+
+For example, installing software packages requires root access.
+
+Do **not** modify the `become` setting in the playbook.
+
+Try running it:
+
+```bash
+ansible-playbook playbooks/20_packages.yml
+```
+
+At this point, you will probably receive an error similar to:
+
+```text
+fatal: [rhel1]: FAILED! => {"msg": "Missing sudo password"}
+fatal: [rhel2]: FAILED! => {"msg": "Missing sudo password"}
+fatal: [rhel3]: FAILED! => {"msg": "Missing sudo password"}
+```
+
+This happens because your `studXX` account can connect through SSH, but it is not yet allowed to use `sudo` without a password.
+
+We will fix that now.
+
+---
+
+## 8.2 Enable sudo access for your student account
+
+Your `studXX` account cannot grant itself sudo privileges.
+
+For each managed host, connect using the privileged lab account:
+
+```text
+ec2-user
+```
+
+Then become root:
+
+```bash
+sudo -i
+```
+
+Create a sudo configuration file for your student account.
+
+For example, for `stud10`:
+
+```bash
+visudo -f /etc/sudoers.d/stud10
+```
+
+Add:
+
+```text
+stud10 ALL=(ALL) NOPASSWD: ALL
+```
+
+Replace `stud10` with your own student account.
+
+Save the file and set the correct permissions:
+
+```bash
+chmod 440 /etc/sudoers.d/stud10
+```
+
+Validate the configuration:
+
+```bash
+visudo -cf /etc/sudoers.d/stud10
+```
+
+You should see:
+
+```text
+/etc/sudoers.d/stud10: parsed OK
+```
+
+Repeat this on:
+
+```text
+rhel1
+rhel2
+rhel3
+```
+
+For this isolated training environment, `NOPASSWD: ALL` is used to allow Ansible to perform administrative tasks without prompting for a sudo password.
+
+---
+
+## 8.3 Verify privilege escalation
+
+Return to `rhelmain` as your `studXX` account.
+
+Test one host manually:
+
+```bash
+ssh studXX@rhel1 "sudo whoami"
+```
+
+Expected:
+
+```text
+root
+```
+
+Now test all managed hosts with Ansible:
+
+```bash
+ansible managed \
+  -b \
+  -m ansible.builtin.command \
+  -a "whoami"
+```
+
+All three hosts should return:
+
+```text
+root
+```
+
+The option:
+
+```text
+-b
+```
+
+is the short form of:
+
+```text
+--become
+```
+
+The playbooks in this unit already contain the required:
+
+```yaml
+become: true
+```
+
+so you do not need to add `-b` when running them.
+
+---
+
+## 8.4 Package module
+
+Now run the package playbook again:
 
 ```bash
 cat playbooks/20_packages.yml
 ansible-playbook playbooks/20_packages.yml
 ```
 
-Customize the package list to also install:
+This playbook uses:
+
+```text
+ansible.builtin.package
+```
+
+to install packages on all managed hosts.
+
+Verify one of the installed packages:
+
+```bash
+ansible managed \
+  -m ansible.builtin.command \
+  -a "rpm -q httpd"
+```
+
+### Customize the playbook
+
+Open:
+
+```bash
+vi playbooks/20_packages.yml
+```
+
+Add the following packages:
 
 ```text
 tar
 tree
 ```
 
-Run the playbook twice and compare the recap.
-
-## 8.2 Service module
+Run the playbook again:
 
 ```bash
-cat playbooks/21_service.yml
-ansible-playbook playbooks/21_service.yml
+ansible-playbook playbooks/20_packages.yml
 ```
 
 Verify:
 
 ```bash
-ansible managed -b -m ansible.builtin.command -a "systemctl is-active httpd"
-ansible managed -b -m ansible.builtin.command -a "systemctl is-enabled httpd"
+ansible managed \
+  -m ansible.builtin.command \
+  -a "rpm -q tree"
 ```
 
-## 8.3 File and copy modules
+Now run the playbook one more time.
+
+Compare the recap from the first and second execution.
+
+Question:
+
+> Why should already installed packages no longer report `changed`?
+
+---
+
+## 8.5 Service module
+
+Inspect the playbook:
+
+```bash
+cat playbooks/21_service.yml
+```
+
+It uses:
+
+```text
+ansible.builtin.service
+```
+
+to manage the Apache service.
+
+Run:
+
+```bash
+ansible-playbook playbooks/21_service.yml
+```
+
+Verify that the service is running:
+
+```bash
+ansible managed \
+  -b \
+  -m ansible.builtin.command \
+  -a "systemctl is-active httpd"
+```
+
+Expected:
+
+```text
+active
+```
+
+Also verify that it is enabled at boot:
+
+```bash
+ansible managed \
+  -b \
+  -m ansible.builtin.command \
+  -a "systemctl is-enabled httpd"
+```
+
+Expected:
+
+```text
+enabled
+```
+
+### Think about the module choice
+
+You could technically run:
+
+```bash
+systemctl start httpd
+```
+
+through the command module.
+
+However, the service module is preferable because it describes the desired state:
+
+```yaml
+state: started
+enabled: true
+```
+
+This allows Ansible to check the current state and only make changes when necessary.
+
+---
+
+## 8.6 File and copy modules
+
+Inspect:
 
 ```bash
 cat playbooks/22_files.yml
+```
+
+This playbook uses:
+
+```text
+ansible.builtin.file
+ansible.builtin.copy
+```
+
+Run:
+
+```bash
 ansible-playbook playbooks/22_files.yml
 ```
 
-Customize the playbook so it also creates:
+Verify the created directory:
+
+```bash
+ansible managed \
+  -b \
+  -m ansible.builtin.command \
+  -a "ls -ld /opt/training"
+```
+
+Also inspect the created file:
+
+```bash
+ansible managed \
+  -b \
+  -m ansible.builtin.command \
+  -a "cat /opt/training/info.txt"
+```
+
+### Customize the playbook
+
+Modify the playbook so it also creates:
 
 ```text
 /opt/training/config
 ```
 
-with mode `0750`.
+The new directory should have:
 
-## 8.4 User module
+```text
+owner: root
+group: root
+mode: 0750
+```
+
+Use:
+
+```text
+ansible.builtin.file
+```
+
+Do not use `mkdir` through the command or shell module.
+
+Run the playbook again:
+
+```bash
+ansible-playbook playbooks/22_files.yml
+```
+
+Verify:
+
+```bash
+ansible managed \
+  -b \
+  -m ansible.builtin.command \
+  -a "ls -ld /opt/training/config"
+```
+
+---
+
+## 8.7 User module
+
+Inspect:
 
 ```bash
 cat playbooks/23_users.yml
+```
+
+This playbook uses:
+
+```text
+ansible.builtin.user
+```
+
+Run:
+
+```bash
 ansible-playbook playbooks/23_users.yml
 ```
 
-Verify:
+Verify that the user exists:
 
 ```bash
-ansible managed -m ansible.builtin.command -a "getent passwd ansibledemo"
+ansible managed \
+  -m ansible.builtin.command \
+  -a "getent passwd ansibledemo"
 ```
 
-Change the comment field and execute again. Identify exactly what changed.
+### Customize the playbook
 
-## 8.5 lineinfile module
+Change the user's:
+
+```text
+comment
+```
+
+field in the playbook.
+
+Run it again:
+
+```bash
+ansible-playbook playbooks/23_users.yml
+```
+
+Then verify:
+
+```bash
+ansible managed \
+  -m ansible.builtin.command \
+  -a "getent passwd ansibledemo"
+```
+
+Identify exactly which part of the account information changed.
+
+Run the playbook one more time without modifying it.
+
+Question:
+
+> Why should the user task now report `ok` instead of `changed`?
+
+---
+
+## 8.8 lineinfile module
+
+Inspect:
 
 ```bash
 cat playbooks/24_lineinfile.yml
-ansible-playbook playbooks/24_lineinfile.yml
 ```
 
-Run it twice.
+This playbook uses:
+
+```text
+ansible.builtin.lineinfile
+```
+
+to ensure that a specific line exists in:
+
+```text
+/etc/motd
+```
+
+Run:
+
+```bash
+ansible-playbook playbooks/24_lineinfile.yml
+```
 
 Verify:
 
 ```bash
-ansible managed -m ansible.builtin.command -a "cat /etc/motd"
+ansible managed \
+  -m ansible.builtin.command \
+  -a "cat /etc/motd"
 ```
 
-Question: Why does the configured line not appear multiple times?
+Run the playbook a second time:
+
+```bash
+ansible-playbook playbooks/24_lineinfile.yml
+```
+
+Verify again:
+
+```bash
+ansible managed \
+  -m ansible.builtin.command \
+  -a "cat /etc/motd"
+```
+
+Question:
+
+> Why does the configured line not appear multiple times?
+
+The `lineinfile` module checks whether the desired line already exists and only changes the file when necessary.
 
 ---
+
+## 8.9 Why use modules instead of shell commands?
+
+Many of the tasks in this unit could technically be implemented using shell commands.
+
+For example:
+
+```bash
+dnf install httpd
+systemctl start httpd
+mkdir /opt/training
+useradd ansibledemo
+echo "message" >> /etc/motd
+```
+
+However, Ansible provides purpose-built modules:
+
+```text
+ansible.builtin.package
+ansible.builtin.service
+ansible.builtin.file
+ansible.builtin.copy
+ansible.builtin.user
+ansible.builtin.lineinfile
+```
+
+These modules understand the desired state of the resource.
+
+For example:
+
+```yaml
+ansible.builtin.package:
+  name: httpd
+  state: present
+```
+
+means:
+
+> Ensure that `httpd` is installed.
+
+It does not mean:
+
+> Run an installation command every time.
+
+This state-based approach is one of the reasons Ansible automation can be **idempotent**.
+
+---
+
+## 8.10 Student challenge – Find the correct module
+
+Use:
+
+```bash
+ansible-doc -l
+```
+
+and:
+
+```bash
+ansible-doc <module-name>
+```
+
+to find an appropriate Ansible module for each requirement:
+
+1. Create a directory.
+2. Install a package.
+3. Start and enable a service.
+4. Create a Linux user.
+5. Copy a static file.
+6. Ensure that one particular line exists in a file.
+7. Change ownership and permissions of an existing file.
+
+Write down the fully qualified module name for each task.
+
+For example:
+
+```text
+ansible.builtin.file
+```
+
+---
+
+## 8.11 What did we learn?
+
+In this unit, you used several important Ansible modules:
+
+| Module | Purpose |
+|---|---|
+| `ansible.builtin.package` | Install or remove packages |
+| `ansible.builtin.service` | Start, stop and enable services |
+| `ansible.builtin.file` | Manage files, directories and permissions |
+| `ansible.builtin.copy` | Copy or create static files |
+| `ansible.builtin.user` | Manage Linux users |
+| `ansible.builtin.lineinfile` | Ensure individual lines exist in files |
+
+You also configured privilege escalation for your student account.
+
+The connection path now looks like this:
+
+```text
+rhelmain
+   |
+   | SSH as studXX
+   |
+   +------> rhel1
+   +------> rhel2
+   +------> rhel3
+               |
+               | sudo / become
+               v
+              root
+```
+
+Remember:
+
+```text
+SSH        = how Ansible connects
+become     = how Ansible gains elevated privileges
+```
+
+And the most important rule from this unit is:
+
+> Prefer a dedicated Ansible module whenever one exists instead of solving every task with `command` or `shell`.
+
+## Next
+
+In the next unit, you will extend Ansible with **collections from Ansible Galaxy**.
+
 
 # 9. Collections and Ansible Galaxy
 
