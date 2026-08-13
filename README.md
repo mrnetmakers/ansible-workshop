@@ -3474,36 +3474,36 @@ sudo -i
 
 Create a sudo configuration file for your student account.
 
-For example, for `stud10`:
+For example, for `stud01`:
 
 ```bash
-visudo -f /etc/sudoers.d/stud10
+visudo -f /etc/sudoers.d/stud01
 ```
 
 Add:
 
 ```text
-stud10 ALL=(ALL) NOPASSWD: ALL
+stud01 ALL=(ALL) NOPASSWD: ALL
 ```
 
-Replace `stud10` with your own student account.
+Replace `stud01` with your own student account.
 
 Save the file and set the correct permissions:
 
 ```bash
-chmod 440 /etc/sudoers.d/stud10
+chmod 440 /etc/sudoers.d/stud01
 ```
 
 Validate the configuration:
 
 ```bash
-visudo -cf /etc/sudoers.d/stud10
+visudo -cf /etc/sudoers.d/stud01
 ```
 
 You should see:
 
 ```text
-/etc/sudoers.d/stud10: parsed OK
+/etc/sudoers.d/stud01: parsed OK
 ```
 
 Repeat this on:
@@ -3591,9 +3591,7 @@ to install packages on all managed hosts.
 Verify one of the installed packages:
 
 ```bash
-ansible managed \
-  -m ansible.builtin.command \
-  -a "rpm -q httpd"
+ansible managed -m ansible.builtin.command -a "rpm -q httpd"
 ```
 
 ### Customize the playbook
@@ -3620,9 +3618,7 @@ ansible-playbook playbooks/20_packages.yml
 Verify:
 
 ```bash
-ansible managed \
-  -m ansible.builtin.command \
-  -a "rpm -q tree"
+ansible managed -m ansible.builtin.command -a "rpm -q tree"
 ```
 
 Now run the playbook one more time.
@@ -3645,9 +3641,7 @@ cat playbooks/21_service.yml
 
 It uses:
 
-```text
-ansible.builtin.service
-```
+`ansible.builtin.service`
 
 to manage the Apache service.
 
@@ -3660,10 +3654,7 @@ ansible-playbook playbooks/21_service.yml
 Verify that the service is running:
 
 ```bash
-ansible managed \
-  -b \
-  -m ansible.builtin.command \
-  -a "systemctl is-active httpd"
+ansible managed -b -m ansible.builtin.command -a "systemctl is-active httpd"
 ```
 
 Expected:
@@ -3675,10 +3666,7 @@ active
 Also verify that it is enabled at boot:
 
 ```bash
-ansible managed \
-  -b \
-  -m ansible.builtin.command \
-  -a "systemctl is-enabled httpd"
+ansible managed -b -m ansible.builtin.command -a "systemctl is-enabled httpd"
 ```
 
 Expected:
