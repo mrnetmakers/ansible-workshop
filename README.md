@@ -3639,9 +3639,7 @@ Inspect the playbook:
 cat playbooks/21_service.yml
 ```
 
-It uses:
-
-`ansible.builtin.service`
+It uses: `ansible.builtin.service`
 
 to manage the Apache service.
 
@@ -3711,6 +3709,14 @@ ansible.builtin.file
 ansible.builtin.copy
 ```
 
+The playbook should create a student-specific directory below `/opt/training`.
+
+For example, for `stud10`:
+
+```text
+/opt/training/stud10
+```
+
 Run:
 
 ```bash
@@ -3720,28 +3726,58 @@ ansible-playbook playbooks/22_files.yml
 Verify the created directory:
 
 ```bash
-ansible managed \
-  -b \
-  -m ansible.builtin.command \
-  -a "ls -ld /opt/training"
+ansible managed -b -m ansible.builtin.command -a "ls -ld /opt/training/$USER"
 ```
 
 Also inspect the created file:
 
 ```bash
-ansible managed \
-  -b \
-  -m ansible.builtin.command \
-  -a "cat /opt/training/info.txt"
+ansible managed -b -m ansible.builtin.command -a "cat /opt/training/$USER/info.txt"
+```
+
+Your playbook should use the Ansible remote-user variable instead of hard-coding a student name.
+
+For example:
+
+```yaml
+path: "/opt/training/{{ ansible_user }}"
+```
+
+and:
+
+```yaml
+dest: "/opt/training/{{ ansible_user }}/info.txt"
+```
+
+This ensures that every student works in a separate directory even though all students share the same managed hosts.
+
+For example:
+
+```text
+/opt/training/stud01
+/opt/training/stud02
+/opt/training/stud03
+...
+/opt/training/stud10
 ```
 
 ### Customize the playbook
 
-Modify the playbook so it also creates:
+Modify the playbook so it also creates a configuration directory for your student account:
 
 ```text
-/opt/training/config
+/opt/training/studXX/config
 ```
+
+Do not hard-code `studXX`.
+
+Use:
+
+```yaml
+{{ ansible_user }}
+```
+
+so that the resulting path is created automatically for the currently configured student account.
 
 The new directory should have:
 
@@ -3768,75 +3804,265 @@ ansible-playbook playbooks/22_files.yml
 Verify:
 
 ```bash
-ansible managed \
-  -b \
-  -m ansible.builtin.command \
-  -a "ls -ld /opt/training/config"
+ansible managed -b -m ansible.builtin.command -a "ls -ld /opt/training/$USER/config"
+```
+
+You should see your own student-specific path on all three managed hosts, for example:
+
+```text
+/opt/training/stud10/config
+```
+
+This is an important pattern for shared lab environments:
+
+> Use variables to create student-specific resources instead of hard-coding common paths that would cause students to overwrite each other's work.
+
+## 8.7 User module
+
+In this exercise, you will use Ansible to create a Linux user on all three managed hosts.
+
+Because the managed systems are shared by multiple students, **each student must create their own unique user**.
+
+The naming convention is:
+
+```text id="06fc7j"
+Student account     User to create
+---------------     --------------
+stud01              ansible01
+stud02              ansible02
+stud03              ansible03
+...
+stud10              ansible10
+```
+
+Instead of hard-coding the username, we will derive it from your existing `ansible_user` variable.
+
+Remember that `ansible_user` is already defined in:
+
+```text id="qqsh70"
+inventory/group_vars/managed.yml
+```
+
+For example:
+
+```yaml id="3uj1yw"
+ansible_user: stud10
 ```
 
 ---
 
-## 8.7 User module
+### Inspect the playbook
 
-Inspect:
+Open:
 
-```bash
+```bash id="1l0tqy"
 cat playbooks/23_users.yml
 ```
 
 This playbook uses:
 
-```text
+```text id="rm5t18"
 ansible.builtin.user
 ```
 
-Run:
+to manage Linux user accounts.
 
-```bash
+Modify the playbook so that the username is derived from your student account.
+
+Use:
+
+```yaml id="4c4w3c"
+name: "{{ ansible_user | replace('stud', 'ansible') }}"
+```
+
+For example, if:
+
+```yaml id="ghqgvf"
+ansible_user: stud10
+```
+
+the expression:
+
+```text id="os0fvg"
+{{ ansible_user | replace('stud', 'ansible') }}
+```
+
+produces:
+
+```text id="2mrksr"
+ansible10
+```
+
+The `replace` part is a **Jinja filter**. It replaces `stud` with `ansible` in the value of the variable.
+
+Your user task should look similar to:
+
+```yaml id="bn2aqa"
+- name: Create student-specific Ansible user
+  ansible.builtin.user:
+    name: "{{ ansible_user | replace('stud', 'ansible') }}"
+    comment: "Created by {{ ansible_user }} using Ansible"
+    shell: /bin/bash
+    state: present
+```
+
+---
+
+### Run the playbook
+
+Execute:
+
+```bash id="e5nv15"
 ansible-playbook playbooks/23_users.yml
 ```
 
-Verify that the user exists:
+The user should now be created on:
 
-```bash
-ansible managed \
-  -m ansible.builtin.command \
-  -a "getent passwd ansibledemo"
+```text id="bswrxe"
+rhel1
+rhel2
+rhel3
 ```
 
-### Customize the playbook
+---
 
-Change the user's:
+### Verify the result
 
-```text
-comment
+First determine which username your expression produces.
+
+For example:
+
+```text id="im8n3a"
+stud01 → ansible01
+stud07 → ansible07
+stud10 → ansible10
 ```
 
-field in the playbook.
+You can verify the user without hard-coding the student number by using the shell variable `$USER`:
 
-Run it again:
+```bash id="u2w48y"
+ANSIBLE_USER="${USER/stud/ansible}"
+```
 
-```bash
+Check:
+
+```bash id="fwc5w2"
+echo "$ANSIBLE_USER"
+```
+
+For `stud10`, this should display:
+
+```text id="fzbt4c"
+ansible10
+```
+
+Now query all managed hosts:
+
+```bash id="r6hzdk"
+ansible managed -m ansible.builtin.command -a "getent passwd $ANSIBLE_USER"
+```
+
+You should receive an entry from all three hosts similar to:
+
+```text id="0hr2ym"
+ansible10:x:1015:1015:Created by stud10 using Ansible:/home/ansible10:/bin/bash
+```
+
+---
+
+### Customize the user
+
+Now change the `comment` field in your playbook.
+
+For example, change:
+
+```yaml id="8ijou4"
+comment: "Created by {{ ansible_user }} using Ansible"
+```
+
+to:
+
+```yaml id="st7lru"
+comment: "Managed by {{ ansible_user }} - Ansible Workshop"
+```
+
+Run the playbook again:
+
+```bash id="w81bln"
 ansible-playbook playbooks/23_users.yml
 ```
 
-Then verify:
+Ansible should report a change because the existing user account does not yet have the requested comment.
 
-```bash
-ansible managed \
-  -m ansible.builtin.command \
-  -a "getent passwd ansibledemo"
+Verify:
+
+```bash id="evqgf9"
+ANSIBLE_USER="${USER/stud/ansible}"
+
+ansible managed -m ansible.builtin.command -a "getent passwd $ANSIBLE_USER"
 ```
 
-Identify exactly which part of the account information changed.
+Compare the result with the previous output.
 
-Run the playbook one more time without modifying it.
+Which field changed?
+
+---
+
+### Test idempotency
+
+Run the playbook once more **without changing anything**:
+
+```bash id="2mtrhg"
+ansible-playbook playbooks/23_users.yml
+```
+
+This time, the user task should report:
+
+```text id="qgrx2o"
+ok
+```
+
+instead of:
+
+```text id="m3fx8c"
+changed
+```
 
 Question:
 
-> Why should the user task now report `ok` instead of `changed`?
+> Why does Ansible no longer modify the user?
+
+The user already exists and all properties managed by the playbook match the desired state.
+
+This demonstrates idempotency again: Ansible changes a resource only when its current state differs from the state described in the playbook.
 
 ---
+
+### Verify that students do not interfere with each other
+
+Because every student creates a different account, multiple students can safely execute this exercise against the same managed hosts.
+
+For example, after several students have completed the exercise, a managed host might contain:
+
+```text id="mx24ma"
+ansible01
+ansible02
+ansible03
+ansible04
+...
+ansible10
+```
+
+Each account belongs to the student who created it:
+
+```text id="1m5lq8"
+stud01 → ansible01
+stud02 → ansible02
+...
+stud10 → ansible10
+```
+
+This is another example of why using variables instead of hard-coded resource names is important when writing reusable Ansible automation.
 
 ## 8.8 lineinfile module
 
