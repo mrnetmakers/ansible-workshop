@@ -979,9 +979,9 @@ rhel2       Managed host
 rhel3       Managed host
 ```
 
-You initially access these systems using the `ec_user` account and the SSH key provided for the lab.
+You initially access these systems using the `ec2_user` account and the SSH key provided for the lab.
 
-However, **Ansible should not run as `ec_user`**.
+However, **Ansible should not run as `ec2_user`**.
 
 Each student has a dedicated account named:
 
@@ -1019,7 +1019,7 @@ There are two different SSH authentication scenarios in this lab.
 You connect to the RHEL instances as:
 
 ```text
-ec_user
+ec2_user
 ```
 
 using the SSH private key provided for the lab.
@@ -1027,7 +1027,7 @@ using the SSH private key provided for the lab.
 For example, from your workstation you might connect with a command similar to:
 
 ```bash
-ssh -i <provided-key> ec_user@<server>
+ssh -i <provided-key> ec2_user@<server>
 ```
 
 The exact connection information will be provided by your instructor.
@@ -1087,7 +1087,7 @@ We therefore need to create an SSH key pair for `studXX` on `rhelmain` and insta
 
 # 4.2 Switch to your student account on rhelmain
 
-First connect to `rhelmain` using the `ec_user` account as described by your instructor.
+First connect to `rhelmain` using the `ec2_user` account as described by your instructor.
 
 Check your current user:
 
@@ -1098,7 +1098,7 @@ whoami
 You should see:
 
 ```text
-ec_user
+ec2_user
 ```
 
 Now switch to your assigned student account.
@@ -1366,7 +1366,7 @@ rhel3
 
 # 4.8 Install your public key on rhel1
 
-Open a separate terminal and connect to `rhel1` using the lab's `ec_user` credentials and SSH key.
+Open a separate terminal and connect to `rhel1` using the lab's `ec2_user` credentials and SSH key.
 
 Once connected, verify:
 
@@ -1377,7 +1377,7 @@ whoami
 Expected:
 
 ```text
-ec_user
+ec2_user
 ```
 
 Now switch to your student account.
@@ -1638,7 +1638,7 @@ Ansible does not normally require you to interactively log in and type commands.
 
 Now install the same public key on `rhel2`.
 
-Connect to `rhel2` as `ec_user`.
+Connect to `rhel2` as `ec2_user`.
 
 Switch to your account:
 
@@ -3205,10 +3205,10 @@ playbooks/07_student_directory.yml
 It should create:
 
 ```text
-/tmp/ansible-workshop
+/tmp/ansible-workshop-studXX
 ```
 
-on all managed systems.
+on all managed systems. Replace studXX with your student id.
 
 Use:
 
@@ -3818,10 +3818,10 @@ ansible.builtin.copy
 
 The playbook should create a student-specific directory below `/opt/training`.
 
-For example, for `stud10`:
+For example, for `stud01`:
 
 ```text
-/opt/training/stud10
+/opt/training/stud01
 ```
 
 Your playbook should use the Ansible remote-user variable instead of hard-coding a student name.
@@ -3881,7 +3881,7 @@ ansible managed -b -m ansible.builtin.command -a "ls -al /opt/training/$USER"
 You should see your own student-specific path on all three managed hosts, for example:
 
 ```text
-/opt/training/stud10
+/opt/training/stud01
 ```
 
 This is an important pattern for shared lab environments:
@@ -3917,7 +3917,7 @@ inventory/group_vars/managed.yml
 For example:
 
 ```yaml id="3uj1yw"
-ansible_user: stud10
+ansible_user: stud01
 ```
 
 ---
@@ -3949,7 +3949,7 @@ name: "{{ ansible_user | replace('stud', 'ansible') }}"
 For example, if:
 
 ```yaml id="ghqgvf"
-ansible_user: stud10
+ansible_user: stud01
 ```
 
 the expression:
@@ -4021,7 +4021,7 @@ Check:
 echo "$ANSIBLE_USER"
 ```
 
-For `stud10`, this should display:
+For `stud01`, this should display:
 
 ```text id="fzbt4c"
 ansible10
@@ -4198,10 +4198,10 @@ Instead, the playbook uses:
 {{ ansible_user }}
 ```
 
-For `stud10`, Ansible therefore manages:
+For `stud01`, Ansible therefore manages:
 
 ```text id="xdseou"
-/opt/training/stud10/motd
+/opt/training/stud01/motd
 ```
 
 while `stud03` manages:
@@ -4283,7 +4283,7 @@ ansible managed -b -m ansible.builtin.command -a "cat /opt/training/$USER/motd"
 Your file should now contain:
 
 ```text id="3x3ypo"
-This server is managed by stud10 using Ansible.
+This server is managed by stud01 using Ansible.
 Welcome to the Ansible Deep Dive Workshop!
 ```
 
@@ -4332,7 +4332,7 @@ This is another example of **idempotency**.
 Imagine that instead of `lineinfile`, we had executed:
 
 ```bash id="3i18lr"
-echo "Welcome to the Ansible Deep Dive Workshop!" >> /opt/training/stud10/motd
+echo "Welcome to the Ansible Deep Dive Workshop!" >> /opt/training/stud01/motd
 ```
 
 Running that command three times would result in:
@@ -4566,7 +4566,7 @@ pwd
 You should see something similar to:
 
 ```text id="4v42bs"
-/home/stud10/ansible-workshop
+/home/stud01/ansible-workshop
 ```
 
 ---
@@ -4608,8 +4608,7 @@ ls -la collections
 Run:
 
 ```bash id="tx6f1w"
-ansible-galaxy collection list \
-  --collections-path ./collections
+ansible-galaxy collection list --collections-path ./collections
 ```
 
 Since we have not installed the workshop collections yet, the directory may currently contain no collections.
@@ -4711,86 +4710,145 @@ It also makes the project more reproducible: `requirements.yml` defines **what t
 
 In the next step, you will use `requirements.yml` to install those dependencies.
 
-## 9.2 Install collections for this workshop
+## 9.2 Install compatible collection versions
 
-The collections required by this unit are defined in:
+Our RHEL 9 training environment uses a specific ansible version. For example:
 
-```text id="v36ltu"
-requirements.yml
+```text
+ansible-core 2.14.18
 ```
 
-Inspect it:
+Collections evolve independently from Ansible Core. New collection releases may therefore require a newer Ansible version than the one installed on our training system.
 
-```bash id="pqwx9e"
-cat requirements.yml
-```
+For this workshop, we will use **fixed collection versions** that are compatible with the Ansible Core version used in the lab.
 
-For this extended unit, the file should contain:
+This also ensures that every student works with exactly the same collection versions.
 
-```yaml id="l83zce"
----
-collections:
-  - name: ansible.posix
-  - name: community.general
-  - name: community.crypto
-  - name: community.dns
-  - name: community.library_inventory_filtering_v1
-  - name: community.postgresql
-```
-
-Install the collections into the project-local `collections/` directory:
-
-```bash id="ct6zsl"
-ansible-galaxy collection install \
-  -r requirements.yml \
-  -p ./collections
-```
-
-Using a project-local directory has an important advantage: the dependencies required by the project can live together with the project instead of depending entirely on globally installed collections.
-
-List the installed collections:
-
-```bash id="og6b5a"
-ansible-galaxy collection list -p ./collections
-```
-
-You should now find the collections from `requirements.yml`.
-
-> If your training environment has no internet access, use the collection content provided by your instructor instead.
-
----
-
-# 9.3 Explore collection content
-
-Before using the collections, explore what was installed.
+### Check your Ansible version
 
 Run:
 
-```bash id="on7t66"
-ansible-doc -l | head
+```bash
+ansible --version
 ```
 
-Search for modules from `community.general`:
+You should see:
 
-```bash id="bmx35b"
-ansible-doc -l | grep '^community.general' | head -20
+```text
+core 2.14.18
 ```
 
-Now try:
-
-```bash id="slbdi5"
-ansible-doc -l | grep '^ansible.posix' | head -20
-```
-
-And:
-
-```bash id="twh8ji"
-ansible-doc -l | grep '^community.crypto' | head -20
-```
-
-Notice how the FQCN immediately tells you where a module comes from.
+The exact formatting may differ slightly.
 
 ---
+
+### Update `requirements.yml`
+
+Open:
+
+```bash
+vi requirements.yml
+```
+
+Replace the collection definitions with:
+
+```yaml
+---
+collections:
+  - name: ansible.posix
+    version: "1.4.0"
+
+  - name: community.general
+    version: "6.0.1"
+
+  - name: community.crypto
+    version: "2.8.1"
+
+  - name: community.dns
+    version: "2.4.1"
+
+  - name: community.postgresql
+    version: "2.3.0"
+```
+
+The `version` field pins each dependency to a specific version.
+
+This is important for reproducible automation.
+
+Without version pinning:
+
+```yaml
+- name: community.general
+```
+
+Ansible Galaxy normally installs a current version, which may require a newer Ansible Core release.
+
+With version pinning:
+
+```yaml
+- name: community.general
+  version: "6.0.1"
+```
+
+every student receives the same tested version.
+
+---
+
+### Remove previously installed incompatible collections
+
+If you already installed newer collection versions during an earlier attempt, remove the project-local collection directory:
+
+```bash
+rm -rf collections
+```
+
+Recreate it:
+
+```bash
+mkdir -p collections
+```
+
+This only removes collections installed inside your own workshop directory.
+
+It does not modify the system-wide Ansible installation.
+
+---
+
+### Install the workshop collections
+
+Run:
+
+```bash
+ansible-galaxy collection install -r requirements.yml --collections-path ./collections
+```
+
+Ansible Galaxy will download and install the versions specified in `requirements.yml`.
+
+---
+
+### Verify the installation
+
+Run:
+
+```bash
+ansible-galaxy collection list --collections-path ./collections
+```
+
+You should see output similar to:
+
+```text
+Collection            Version
+--------------------- -------
+ansible.posix         1.4.0
+community.crypto      2.8.1
+community.dns         2.4.1
+community.general     6.0.1
+community.postgresql  2.3.0
+```
+
+Your project now has a predictable dependency set that matches the Ansible Core generation used in this workshop.
+
+> In real projects, version pinning also protects automation from unexpected behavior changes caused by automatically installing newer collection releases.
 
 # 9.4 Collection 1 – `ansible.posix`
 
@@ -4834,9 +4892,7 @@ Do **not** change the SELinux configuration.
 Instead, check the current state on all managed systems:
 
 ```bash id="idjhc3"
-ansible managed \
-  -m ansible.builtin.command \
-  -a "getenforce"
+ansible managed -m ansible.builtin.command -a "getenforce"
 ```
 
 Then answer:
@@ -4914,10 +4970,7 @@ ansible-playbook playbooks/25_firewall.yml
 Verify:
 
 ```bash id="yyoh9d"
-ansible managed \
-  -b \
-  -m ansible.builtin.command \
-  -a "firewall-cmd --list-ports"
+ansible managed -b -m ansible.builtin.command -a "firewall-cmd --list-ports"
 ```
 
 Find your own port in the output.
@@ -5164,10 +5217,10 @@ Set the common name to something student-specific, for example:
 common_name: "{{ ansible_user }}.training.example"
 ```
 
-For `stud10`, this would become:
+For `stud01`, this would become:
 
 ```text id="lmlzq7"
-stud10.training.example
+stud01.training.example
 ```
 
 Run the playbook and verify:
