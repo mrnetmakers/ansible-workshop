@@ -821,17 +821,18 @@ vi playbooks/01_yaml_broken.yml
 Find:
 
 ```yaml
-    packages:
-      - httpd
-      - curl
+- name: Learn YAML data types
+  hosts: localhost
+  gather_facts: false
+
 ```
 
 Change it to:
 
 ```yaml
-    packages:
-      - httpd
-        - curl
+- name: Learn YAML data types
+  hosts: localhost
+   gather_facts: false
 ```
 
 Now run:
@@ -3717,24 +3718,6 @@ For example, for `stud10`:
 /opt/training/stud10
 ```
 
-Run:
-
-```bash
-ansible-playbook playbooks/22_files.yml
-```
-
-Verify the created directory:
-
-```bash
-ansible managed -b -m ansible.builtin.command -a "ls -ld /opt/training/$USER"
-```
-
-Also inspect the created file:
-
-```bash
-ansible managed -b -m ansible.builtin.command -a "cat /opt/training/$USER/info.txt"
-```
-
 Your playbook should use the Ansible remote-user variable instead of hard-coding a student name.
 
 For example:
@@ -3763,10 +3746,8 @@ For example:
 
 ### Customize the playbook
 
-Modify the playbook so it also creates a configuration directory for your student account:
-
-```text
-/opt/training/studXX/config
+```bash
+vi playbooks/22_files.yml
 ```
 
 Do not hard-code `studXX`.
@@ -3779,23 +3760,7 @@ Use:
 
 so that the resulting path is created automatically for the currently configured student account.
 
-The new directory should have:
-
-```text
-owner: root
-group: root
-mode: 0750
-```
-
-Use:
-
-```text
-ansible.builtin.file
-```
-
-Do not use `mkdir` through the command or shell module.
-
-Run the playbook again:
+When done, run the playbook again:
 
 ```bash
 ansible-playbook playbooks/22_files.yml
@@ -3804,13 +3769,13 @@ ansible-playbook playbooks/22_files.yml
 Verify:
 
 ```bash
-ansible managed -b -m ansible.builtin.command -a "ls -ld /opt/training/$USER/config"
+ansible managed -b -m ansible.builtin.command -a "ls -al /opt/training/$USER"
 ```
 
 You should see your own student-specific path on all three managed hosts, for example:
 
 ```text
-/opt/training/stud10/config
+/opt/training/stud10
 ```
 
 This is an important pattern for shared lab environments:
@@ -3965,7 +3930,7 @@ ansible managed -m ansible.builtin.command -a "getent passwd $ANSIBLE_USER"
 You should receive an entry from all three hosts similar to:
 
 ```text id="0hr2ym"
-ansible10:x:1015:1015:Created by stud10 using Ansible:/home/ansible10:/bin/bash
+ansible10:x:1015:1015:Created by stud01 using Ansible:/home/ansible01:/bin/bash
 ```
 
 ---
@@ -4066,59 +4031,231 @@ This is another example of why using variables instead of hard-coded resource na
 
 ## 8.8 lineinfile module
 
-Inspect:
+In this exercise, you will use:
 
-```bash
-cat playbooks/24_lineinfile.yml
+>ansible.builtin.lineinfile
+
+to ensure that a specific line exists in a file.
+
+On a normal Linux system, `/etc/motd` contains the system-wide **Message of the Day**.
+
+However, our managed hosts are shared by multiple students. If everyone modified `/etc/motd`, all students would be changing the same file.
+
+Instead, every student will manage their own MOTD-style file inside their training directory:
+
+```text id="hz1i4r"
+/opt/training/studXX/motd
 ```
 
-This playbook uses:
+For example:
 
-```text
-ansible.builtin.lineinfile
+```text id="gtlf6s"
+/opt/training/stud01/motd
+/opt/training/stud02/motd
+/opt/training/stud10/motd
 ```
 
-to ensure that a specific line exists in:
+---
 
-```text
-/etc/motd
-```
+### Inspect the playbook
 
 Run:
 
-```bash
+```bash id="i6haxd"
+cat playbooks/24_lineinfile.yml
+```
+
+The playbook uses:
+
+```text id="8b1hde"
+ansible.builtin.lineinfile
+```
+
+to manage a line inside your student-specific file.
+
+The important part should look similar to:
+
+```yaml id="6lrzmg"
+- name: Add workshop marker to student MOTD
+  ansible.builtin.lineinfile:
+    path: "/opt/training/{{ ansible_user }}/motd"
+    line: "This server is managed by {{ ansible_user }} using Ansible."
+    create: true
+    mode: "0644"
+```
+
+Notice that the student name is **not hard-coded**.
+
+Instead, the playbook uses:
+
+```text id="vv2p91"
+{{ ansible_user }}
+```
+
+For `stud10`, Ansible therefore manages:
+
+```text id="xdseou"
+/opt/training/stud10/motd
+```
+
+while `stud03` manages:
+
+```text id="95zwwl"
+/opt/training/stud03/motd
+```
+
+This allows multiple students to run the same playbook against the same managed hosts without overwriting each other's files.
+
+---
+
+### Run the playbook
+
+Execute:
+
+```bash id="b3b4sc"
+ansible-playbook playbooks/24_lineinfile.yml
+```
+
+The file should now be created on:
+
+```text id="83o22p"
+rhel1
+rhel2
+rhel3
+```
+
+---
+
+### Verify the result
+
+You can use your local `$USER` variable to construct the correct path:
+
+```bash id="1i5kpm"
+ansible managed -b -m ansible.builtin.command -a "cat /opt/training/$USER/motd"
+```
+
+For example, `stud01` should see:
+
+```text id="o99j6q"
+This server is managed by stud01 using Ansible.
+```
+
+---
+
+### Add another line
+
+Now customize the playbook.
+
+Add a second `lineinfile` task that ensures the following line exists:
+
+```text id="v3lml3"
+Welcome to the Ansible Deep Dive Workshop!
+```
+
+Do not use `shell`, `command`, or `echo`.
+
+Use another:
+
+```text id="nxzndg"
+ansible.builtin.lineinfile
+```
+
+task.
+
+Run the playbook:
+
+```bash id="z0qdta"
 ansible-playbook playbooks/24_lineinfile.yml
 ```
 
 Verify:
 
-```bash
+```bash id="dnixby"
 ansible managed \
+  -b \
   -m ansible.builtin.command \
-  -a "cat /etc/motd"
+  -a "cat /opt/training/$USER/motd"
 ```
 
-Run the playbook a second time:
+Your file should now contain:
 
-```bash
+```text id="3x3ypo"
+This server is managed by stud10 using Ansible.
+Welcome to the Ansible Deep Dive Workshop!
+```
+
+The exact student username will depend on your account.
+
+---
+
+### Test idempotency
+
+Run the playbook again:
+
+```bash id="iwj7vi"
 ansible-playbook playbooks/24_lineinfile.yml
 ```
 
-Verify again:
+Then inspect the file again:
 
-```bash
+```bash id="9myy9c"
 ansible managed \
+  -b \
   -m ansible.builtin.command \
-  -a "cat /etc/motd"
+  -a "cat /opt/training/$USER/motd"
 ```
 
 Question:
 
-> Why does the configured line not appear multiple times?
+> Why do the configured lines not appear multiple times?
 
-The `lineinfile` module checks whether the desired line already exists and only changes the file when necessary.
+The `lineinfile` module does not simply append text to a file.
+
+Instead, it checks whether the requested line already exists. If the line is already present, no modification is necessary and the task reports:
+
+```text id="pdty5g"
+ok
+```
+
+instead of:
+
+```text id="q0zj2c"
+changed
+```
+
+This is another example of **idempotency**.
 
 ---
+
+### Compare it with a shell command
+
+Imagine that instead of `lineinfile`, we had executed:
+
+```bash id="3i18lr"
+echo "Welcome to the Ansible Deep Dive Workshop!" >> /opt/training/stud10/motd
+```
+
+Running that command three times would result in:
+
+```text id="ej1gl4"
+Welcome to the Ansible Deep Dive Workshop!
+Welcome to the Ansible Deep Dive Workshop!
+Welcome to the Ansible Deep Dive Workshop!
+```
+
+With:
+
+```text id="1w5nm6"
+ansible.builtin.lineinfile
+```
+
+we describe the desired state:
+
+> This line must exist in the file.
+
+Ansible checks the current state and only modifies the file when necessary.
+
+That difference between **executing commands** and **describing desired state** is an important concept when writing reliable Ansible automation.
 
 ## 8.9 Why use modules instead of shell commands?
 
