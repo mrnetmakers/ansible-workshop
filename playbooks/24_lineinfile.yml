@@ -4,9 +4,9 @@
   become: true
 
   tasks:
-    - name: Add workshop marker to MOTD
-      ansible.builtin.lineinfile:
-        path: /etc/motd
-        line: This server is managed using Ansible.
-        create: true
-        mode: "0644"
+  - name: Add workshop marker to student MOTD
+    ansible.builtin.lineinfile:
+      path: "/opt/training/{{ ansible_user }}/motd"
+      line: "This server is managed by {{ ansible_user }} using Ansible."
+      create: true
+      mode: "0644"
