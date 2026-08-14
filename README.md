@@ -4482,8 +4482,6 @@ And the most important rule from this unit is:
 
 # 9. Collections and Ansible Galaxy
 
-**Estimated time:** 60–75 minutes
-
 So far, most modules we have used came from:
 
 ```text id="5tv9hr"
@@ -4549,25 +4547,169 @@ This complete name is called the **Fully Qualified Collection Name**, or **FQCN*
 
 ---
 
-## 9.1 Inspect installed collections
+## 9.1 Inspect Ansible collections
 
-Start by checking which collections are already available:
+Before installing additional collections, let's first understand where Ansible looks for collection content.
 
-```bash id="85htvb"
+Make sure you are in your workshop directory:
+
+```bash id="yd7ncd"
+cd ~/ansible-workshop
+```
+
+Check:
+
+```bash id="hufp13"
+pwd
+```
+
+You should see something similar to:
+
+```text id="4v42bs"
+/home/stud10/ansible-workshop
+```
+
+---
+
+### Check the project collection directory
+
+This workshop uses a **project-local collection directory**:
+
+```text id="7pt6g3"
+collections/
+```
+
+Check whether it already exists:
+
+```bash id="1drc5p"
+ls -ld collections
+```
+
+If the directory does not exist yet, create it:
+
+```bash id="16v2fn"
+mkdir -p collections
+```
+
+At this point it may still be empty.
+
+Check:
+
+```bash id="0jll2j"
+ls -la collections
+```
+
+---
+
+### List collections from a specific path
+
+`ansible-galaxy` can explicitly be told where to look for collections.
+
+Run:
+
+```bash id="tx6f1w"
+ansible-galaxy collection list \
+  --collections-path ./collections
+```
+
+Since we have not installed the workshop collections yet, the directory may currently contain no collections.
+
+That is expected.
+
+Depending on your Ansible version and configuration, running:
+
+```bash id="z13epp"
 ansible-galaxy collection list
 ```
 
-You will probably see several collections depending on how your Ansible environment was installed.
+without specifying a collection path may also produce an error such as:
 
-You can also inspect documentation for a module using its FQCN:
+```text id="gdswdr"
+ERROR! - None of the provided paths were usable.
+Please specify a valid path with --collections-path
+```
 
-```bash id="y78qkr"
+For this workshop, we will therefore explicitly use the project-local directory:
+
+```text id="puxq3i"
+./collections
+```
+
+---
+
+### Check Ansible's configured collection paths
+
+You can also ask Ansible which collection paths are currently configured:
+
+```bash id="ak8e1j"
+ansible-config dump | grep COLLECTIONS_PATHS
+```
+
+Depending on your Ansible Core version, the setting may be displayed slightly differently.
+
+You can also check:
+
+```bash id="spgb9i"
+ansible --version
+```
+
+Look for the line showing the collection locations, if present.
+
+The important point is that collections must exist in a location where Ansible knows how to find them.
+
+---
+
+### Try to inspect a collection module
+
+Now try:
+
+```bash id="6lgtyo"
 ansible-doc community.general.ini_file
 ```
 
-If the collection is not installed, Ansible will tell you that the module cannot be found.
+If `community.general` is not installed yet, Ansible will not be able to display the module documentation.
+
+That is fine.
+
+In the next exercise, we will install the required collections into:
+
+```text id="6cd7v2"
+./collections
+```
+
+and then repeat the check.
 
 ---
+
+### Why use project-local collections?
+
+Instead of relying on collections installed globally on `rhelmain`, this workshop keeps its additional collections inside the project:
+
+```text id="4spfnv"
+ansible-workshop/
+├── ansible.cfg
+├── requirements.yml
+├── inventory/
+├── playbooks/
+└── collections/
+```
+
+This has several advantages.
+
+Each student gets their own collection installation:
+
+```text id="m7jey4"
+/home/stud01/ansible-workshop/collections/
+/home/stud02/ansible-workshop/collections/
+/home/stud03/ansible-workshop/collections/
+...
+```
+
+Students therefore do not modify a shared system-wide Ansible installation.
+
+It also makes the project more reproducible: `requirements.yml` defines **what the project needs**, while `collections/` is the location where those dependencies are installed.
+
+In the next step, you will use `requirements.yml` to install those dependencies.
 
 ## 9.2 Install collections for this workshop
 
