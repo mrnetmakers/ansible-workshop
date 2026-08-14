@@ -2873,13 +2873,13 @@ You should receive successful results from all three managed hosts.
 
 Create:
 
-```bash
+```bash id="ng9yex"
 vi playbooks/03_remote_hostname.yml
 ```
 
 Add:
 
-```yaml
+```yaml id="dl4mta"
 ---
 - name: Display remote hostnames
   hosts: managed
@@ -2894,13 +2894,13 @@ Add:
 
 Run:
 
-```bash
+```bash id="1jewg0"
 ansible-playbook playbooks/03_remote_hostname.yml
 ```
 
 Notice:
 
-```yaml
+```yaml id="hcc9r9"
 changed_when: false
 ```
 
@@ -2908,13 +2908,13 @@ The `hostname` command only reads information. It does not modify the managed ho
 
 Without this setting, the `command` module normally reports the task as:
 
-```text
+```text id="k5anli"
 changed
 ```
 
 By adding:
 
-```yaml
+```yaml id="hvtc2m"
 changed_when: false
 ```
 
@@ -2924,17 +2924,123 @@ we tell Ansible:
 
 The result should therefore be reported as:
 
-```text
+```text id="v8pjrj"
 ok
 ```
 
 instead of:
 
-```text
+```text id="v9alws"
 changed
 ```
 
 ---
+
+### Store and display the command result
+
+So far, Ansible executed the `hostname` command, but we did not use its result in another task.
+
+Ansible can store the result of a task in a variable using:
+
+```text id="81yfxr"
+register
+```
+
+Modify your playbook:
+
+```yaml id="o4z8cf"
+---
+- name: Display remote hostnames
+  hosts: managed
+  gather_facts: false
+
+  tasks:
+    - name: Get hostname
+      ansible.builtin.command:
+        cmd: hostname
+      register: hostname_result
+      changed_when: false
+
+    - name: Display hostname
+      ansible.builtin.debug:
+        msg: "The hostname of {{ inventory_hostname }} is {{ hostname_result.stdout }}"
+```
+
+Run the playbook again:
+
+```bash id="2b6ehy"
+ansible-playbook playbooks/03_remote_hostname.yml
+```
+
+You should now see output similar to:
+
+```text id="ff39zk"
+TASK [Display hostname]
+ok: [rhel1] => {
+    "msg": "The hostname of rhel1 is rhel1"
+}
+```
+
+The line:
+
+```yaml id="g45t5u"
+register: hostname_result
+```
+
+stores the result of the command in a variable named:
+
+```text id="7me03y"
+hostname_result
+```
+
+Command results contain several values. One of the most commonly used is:
+
+```text id="ehddg4"
+stdout
+```
+
+which contains the standard output of the command.
+
+Therefore:
+
+```text id="kjcdaz"
+{{ hostname_result.stdout }}
+```
+
+contains the output produced by:
+
+```bash id="uw1f3i"
+hostname
+```
+
+You can inspect the **complete registered result** by temporarily adding:
+
+```yaml id="x3o0vu"
+    - name: Display complete command result
+      ansible.builtin.debug:
+        var: hostname_result
+```
+
+Run the playbook again and look for values such as:
+
+```text id="vtidty"
+stdout
+stderr
+rc
+changed
+```
+
+You will work with `register` in more detail later in the workshop. For now, remember the basic pattern:
+
+```text id="k87k32"
+Task executes
+     ↓
+register
+     ↓
+Variable stores result
+     ↓
+debug / msg uses result
+```
 
 ## 5.23 Create a file remotely
 
@@ -4376,89 +4482,957 @@ And the most important rule from this unit is:
 
 # 9. Collections and Ansible Galaxy
 
+**Estimated time:** 60–75 minutes
+
+So far, most modules we have used came from:
+
+```text id="5tv9hr"
+ansible.builtin
+```
+
+Examples include:
+
+```text id="ofxjqp"
+ansible.builtin.package
+ansible.builtin.file
+ansible.builtin.copy
+ansible.builtin.user
+```
+
+Ansible can be extended with additional content through **collections**.
+
+A collection can contain:
+
+- modules
+- plugins
+- roles
+- playbooks
+- documentation
+
+Collections are distributed through **Ansible Galaxy** and other sources.
+
+The general naming format for content inside a collection is:
+
+```text id="bfv0z4"
+namespace.collection.module
+```
+
+For example:
+
+```text id="40q0g5"
+community.general.ini_file
+```
+
+Here:
+
+```text id="umtz28"
+community
+```
+
+is the namespace,
+
+```text id="c2fw4e"
+general
+```
+
+is the collection,
+
+and:
+
+```text id="i8t0ke"
+ini_file
+```
+
+is the module.
+
+This complete name is called the **Fully Qualified Collection Name**, or **FQCN**.
+
+---
+
 ## 9.1 Inspect installed collections
 
-```bash
+Start by checking which collections are already available:
+
+```bash id="85htvb"
 ansible-galaxy collection list
 ```
 
-The repository declares two public collections in `requirements.yml`:
+You will probably see several collections depending on how your Ansible environment was installed.
 
-```bash
+You can also inspect documentation for a module using its FQCN:
+
+```bash id="y78qkr"
+ansible-doc community.general.ini_file
+```
+
+If the collection is not installed, Ansible will tell you that the module cannot be found.
+
+---
+
+## 9.2 Install collections for this workshop
+
+The collections required by this unit are defined in:
+
+```text id="v36ltu"
+requirements.yml
+```
+
+Inspect it:
+
+```bash id="pqwx9e"
 cat requirements.yml
 ```
 
-Install them into the project-local `collections/` directory:
+For this extended unit, the file should contain:
 
-```bash
-ansible-galaxy collection install -r requirements.yml -p ./collections
+```yaml id="l83zce"
+---
+collections:
+  - name: ansible.posix
+  - name: community.general
+  - name: community.crypto
+  - name: community.dns
+  - name: community.library_inventory_filtering_v1
+  - name: community.postgresql
 ```
 
-List them:
+Install the collections into the project-local `collections/` directory:
 
-```bash
+```bash id="ct6zsl"
+ansible-galaxy collection install \
+  -r requirements.yml \
+  -p ./collections
+```
+
+Using a project-local directory has an important advantage: the dependencies required by the project can live together with the project instead of depending entirely on globally installed collections.
+
+List the installed collections:
+
+```bash id="og6b5a"
 ansible-galaxy collection list -p ./collections
 ```
 
+You should now find the collections from `requirements.yml`.
+
 > If your training environment has no internet access, use the collection content provided by your instructor instead.
 
-## 9.2 `ansible.posix.firewalld`
+---
 
-Inspect:
+# 9.3 Explore collection content
 
-```bash
+Before using the collections, explore what was installed.
+
+Run:
+
+```bash id="on7t66"
+ansible-doc -l | head
+```
+
+Search for modules from `community.general`:
+
+```bash id="bmx35b"
+ansible-doc -l | grep '^community.general' | head -20
+```
+
+Now try:
+
+```bash id="slbdi5"
+ansible-doc -l | grep '^ansible.posix' | head -20
+```
+
+And:
+
+```bash id="twh8ji"
+ansible-doc -l | grep '^community.crypto' | head -20
+```
+
+Notice how the FQCN immediately tells you where a module comes from.
+
+---
+
+# 9.4 Collection 1 – `ansible.posix`
+
+The `ansible.posix` collection contains modules and plugins related to POSIX/Linux system administration.
+
+Examples include modules for:
+
+```text id="l31qxi"
+SELinux
+firewalld
+mounts
+sysctl
+authorized_keys
+```
+
+Explore the collection:
+
+```bash id="st6b5e"
+ansible-doc -l | grep '^ansible.posix'
+```
+
+---
+
+## Example 1 – Inspect SELinux configuration
+
+First inspect:
+
+```bash id="8ecoxc"
+ansible-doc ansible.posix.selinux
+```
+
+Find the parameters:
+
+```text id="0zqxb3"
+policy
+state
+```
+
+Do **not** change the SELinux configuration.
+
+Instead, check the current state on all managed systems:
+
+```bash id="idjhc3"
+ansible managed \
+  -m ansible.builtin.command \
+  -a "getenforce"
+```
+
+Then answer:
+
+1. Which values does `state` accept?
+2. Which parameter controls the SELinux policy?
+3. Can the module make the configuration persistent?
+4. Would changing SELinux mode be safe in a shared training environment?
+
+The last question is important.
+
+Not every module that you discover should automatically be executed.
+
+---
+
+## Example 2 – Manage a student-specific firewall port
+
+Now inspect:
+
+```bash id="tzm3kt"
 ansible-doc ansible.posix.firewalld
 ```
 
-Read and execute:
+In this lab, multiple students share:
 
-```bash
+```text id="w0b82a"
+rhel1
+rhel2
+rhel3
+```
+
+Therefore, students should not all manage the same firewall rule.
+
+Instead, each student will use their student number as part of the port.
+
+For example:
+
+```text id="9dkd5h"
+stud01 → 8001/tcp
+stud02 → 8002/tcp
+stud10 → 8010/tcp
+stud15 → 8015/tcp
+```
+
+Inspect:
+
+```bash id="owmqf4"
 cat playbooks/25_firewall.yml
+```
+
+The playbook should derive the port from `ansible_user`, for example:
+
+```yaml id="45ok0y"
+student_number: "{{ ansible_user | regex_replace('^stud', '') }}"
+student_port: "80{{ student_number }}"
+```
+
+The firewall task can then use:
+
+```yaml id="j3bf6b"
+- name: Open student-specific firewall port
+  ansible.posix.firewalld:
+    port: "{{ student_port }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+```
+
+Run:
+
+```bash id="3f4dml"
 ansible-playbook playbooks/25_firewall.yml
 ```
 
-Verify on a managed host:
+Verify:
 
-```bash
-ansible managed -b -m ansible.builtin.command -a "firewall-cmd --list-services"
+```bash id="yyoh9d"
+ansible managed \
+  -b \
+  -m ansible.builtin.command \
+  -a "firewall-cmd --list-ports"
 ```
 
-## 9.3 `community.general.ini_file`
+Find your own port in the output.
 
-```bash
+---
+
+# 9.5 Collection 2 – `community.general`
+
+`community.general` is a large community-maintained collection containing modules for many different technologies and configuration formats.
+
+Explore:
+
+```bash id="m51gjd"
+ansible-doc -l | grep '^community.general' | head -30
+```
+
+---
+
+## Example 1 – Manage an INI file
+
+Inspect:
+
+```bash id="kgssq9"
 ansible-doc community.general.ini_file
+```
+
+Then inspect the provided playbook:
+
+```bash id="n0pn07"
 cat playbooks/26_ini.yml
+```
+
+Because the managed hosts are shared, the configuration file must be student-specific.
+
+The playbook should manage:
+
+```text id="qurxrh"
+/opt/training/studXX/training-app.conf
+```
+
+For example:
+
+```yaml id="6gv8h4"
+path: "/opt/training/{{ ansible_user }}/training-app.conf"
+```
+
+Run:
+
+```bash id="p1vdtw"
 ansible-playbook playbooks/26_ini.yml
 ```
 
 Verify:
 
-```bash
-ansible managed -b -m ansible.builtin.command -a "cat /etc/training-app.conf"
+```bash id="v3nm4r"
+ansible managed \
+  -b \
+  -m ansible.builtin.command \
+  -a "cat /opt/training/$USER/training-app.conf"
 ```
 
-Customize the playbook with a new section:
+---
 
-```ini
+### Customize the INI file
+
+Add another task that creates:
+
+```ini id="ox7h68"
 [logging]
 level=info
 ```
 
-## 9.4 Collection discovery exercise
+Run:
 
-Inspect another module:
-
-```bash
-ansible-doc ansible.posix.selinux
+```bash id="ixsaxm"
+ansible-playbook playbooks/26_ini.yml
 ```
 
-Do not change SELinux mode. Instead answer:
+Verify the result.
 
-1. Which states does the module accept?
-2. Which parameter controls the policy?
-3. Can the module make persistent changes?
+Then run the playbook a second time.
+
+Question:
+
+> Does `level=info` appear more than once?
 
 ---
+
+## Example 2 – Manage a student-specific archive
+
+Find the archive module:
+
+```bash id="dnvpjo"
+ansible-doc community.general.archive
+```
+
+Your existing directory:
+
+```text id="kmx4cn"
+/opt/training/studXX
+```
+
+contains files created during previous exercises.
+
+Create:
+
+```text id="frvf0d"
+playbooks/27_archive.yml
+```
+
+Use `community.general.archive` to create:
+
+```text id="0fqdwa"
+/tmp/studXX-training.tar.gz
+```
+
+from:
+
+```text id="v4mrcu"
+/opt/training/studXX
+```
+
+Do not hard-code your username.
+
+Use:
+
+```text id="3fjx21"
+{{ ansible_user }}
+```
+
+Run your playbook and verify the archive:
+
+```bash id="i2t5ar"
+ansible managed \
+  -b \
+  -m ansible.builtin.command \
+  -a "ls -lh /tmp/$USER-training.tar.gz"
+```
+
+---
+
+# 9.6 Collection 3 – `community.crypto`
+
+The `community.crypto` collection contains modules for working with:
+
+- private keys
+- public keys
+- certificates
+- certificate signing requests
+- OpenSSL-related objects
+
+Explore:
+
+```bash id="0o4c2c"
+ansible-doc -l | grep '^community.crypto' | head -30
+```
+
+This collection is particularly useful when automating TLS infrastructure.
+
+---
+
+## Example 1 – Create a private key
+
+Inspect:
+
+```bash id="h9uy41"
+ansible-doc community.crypto.openssl_privatekey
+```
+
+Create:
+
+```text id="okrvqf"
+playbooks/28_private_key.yml
+```
+
+The playbook should create a private key for each student under:
+
+```text id="1l3n45"
+/opt/training/studXX/tls/
+```
+
+First ensure that the directory exists:
+
+```yaml id="rklj22"
+- name: Create TLS directory
+  ansible.builtin.file:
+    path: "/opt/training/{{ ansible_user }}/tls"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+```
+
+Then use:
+
+```text id="90k9a9"
+community.crypto.openssl_privatekey
+```
+
+to create:
+
+```text id="l99r3c"
+/opt/training/studXX/tls/server.key
+```
+
+Run your playbook:
+
+```bash id="z0icwp"
+ansible-playbook playbooks/28_private_key.yml
+```
+
+Verify:
+
+```bash id="4m5v5c"
+ansible managed \
+  -b \
+  -m ansible.builtin.command \
+  -a "ls -l /opt/training/$USER/tls/server.key"
+```
+
+Run the playbook a second time and observe whether the key is recreated.
+
+---
+
+## Example 2 – Create a certificate signing request
+
+Inspect:
+
+```bash id="g86nnv"
+ansible-doc community.crypto.openssl_csr
+```
+
+Extend your playbook with a task that creates:
+
+```text id="ojp1dt"
+/opt/training/studXX/tls/server.csr
+```
+
+Use the private key you created in the previous task.
+
+Set the common name to something student-specific, for example:
+
+```yaml id="1g89mx"
+common_name: "{{ ansible_user }}.training.example"
+```
+
+For `stud10`, this would become:
+
+```text id="lmlzq7"
+stud10.training.example
+```
+
+Run the playbook and verify:
+
+```bash id="vmm9vi"
+ansible managed \
+  -b \
+  -m ansible.builtin.command \
+  -a "ls -l /opt/training/$USER/tls/"
+```
+
+You should now have both:
+
+```text id="m9w2hq"
+server.key
+server.csr
+```
+
+---
+
+# 9.7 Collection 4 – `community.dns`
+
+The `community.dns` collection provides plugins and modules for working with DNS services and DNS-related data.
+
+Unlike our previous exercises, we do **not** have a dedicated DNS service for every student.
+
+Therefore, this exercise focuses on discovering collection functionality without modifying external DNS infrastructure.
+
+This is an important Ansible skill too:
+
+> Before using a collection, understand what infrastructure and credentials its modules require.
+
+Explore:
+
+```bash id="ckzh5d"
+ansible-doc -l | grep '^community.dns' | head -30
+```
+
+---
+
+## Example 1 – Explore DNS lookup capabilities
+
+Search for lookup plugins:
+
+```bash id="7em0fh"
+ansible-doc -t lookup -l | grep community.dns
+```
+
+Pick one of the DNS lookup plugins and inspect its documentation.
+
+For example, depending on the installed collection version:
+
+```bash id="beyf03"
+ansible-doc -t lookup community.dns.lookup
+```
+
+Read:
+
+```text id="xsfvx3"
+SYNOPSIS
+OPTIONS
+EXAMPLES
+```
+
+Answer:
+
+1. What information can the plugin retrieve?
+2. Does it run on the control node or managed host?
+3. Does it modify DNS?
+4. Which Python dependencies does it require?
+
+---
+
+## Example 2 – Find DNS provider modules
+
+Run:
+
+```bash id="g8s48l"
+ansible-doc -l | grep '^community.dns'
+```
+
+Identify at least two DNS providers or DNS-related services supported by the collection.
+
+For one module, inspect:
+
+```bash id="i2tyeu"
+ansible-doc <fully-qualified-module-name>
+```
+
+Answer:
+
+1. What credentials would you need?
+2. Which DNS records can it manage?
+3. Why should we **not** execute this module against arbitrary public DNS infrastructure during the workshop?
+
+This exercise demonstrates that installing a collection does not mean every module can or should be executed in your current environment.
+
+---
+
+# 9.8 Collection 5 – `community.postgresql`
+
+The `community.postgresql` collection provides modules for automating PostgreSQL.
+
+Examples include managing:
+
+- databases
+- database users
+- privileges
+- schemas
+- extensions
+- queries
+
+Explore:
+
+```bash id="7rm78q"
+ansible-doc -l | grep '^community.postgresql' | head -30
+```
+
+We do not need to install or configure a shared PostgreSQL server for this exercise.
+
+Instead, you will explore how you **would** automate one.
+
+---
+
+## Example 1 – Explore database management
+
+Inspect:
+
+```bash id="o4tljz"
+ansible-doc community.postgresql.postgresql_db
+```
+
+Find the parameter used to specify:
+
+- database name;
+- desired state;
+- database owner.
+
+Now imagine each student had to create a database.
+
+A shared environment should not use:
+
+```text id="y44xzs"
+training
+```
+
+for everyone.
+
+Instead, we would use:
+
+```text id="7l2v8h"
+training_stud01
+training_stud02
+training_stud03
+...
+```
+
+Write down a task that would create:
+
+```text id="0y1g31"
+training_{{ ansible_user }}
+```
+
+Do not execute it.
+
+---
+
+## Example 2 – Explore PostgreSQL users
+
+Inspect:
+
+```bash id="1hk28u"
+ansible-doc community.postgresql.postgresql_user
+```
+
+Find the parameters for:
+
+```text id="60ynbd"
+name
+password
+state
+```
+
+Write a sample task that would create:
+
+```text id="sf15gu"
+app_studXX
+```
+
+Again, derive the name from:
+
+```text id="9p7i5n"
+{{ ansible_user }}
+```
+
+Do not execute the task because the workshop systems are not providing a student-specific PostgreSQL environment.
+
+Question:
+
+> What additional software or Python library does the module documentation say is required on the system where the PostgreSQL module executes?
+
+This is an important lesson: installing an Ansible collection does not automatically install every external dependency required by its modules.
+
+---
+
+# 9.9 Collection 6 – `community.library_inventory_filtering_v1`
+
+Not every collection exists to configure operating-system resources.
+
+Some collections provide plugins or functionality that extends Ansible itself.
+
+Inspect the collection:
+
+```bash id="2z5wqt"
+ansible-doc -l | grep 'community.library_inventory_filtering'
+```
+
+Also inspect the installed files:
+
+```bash id="dwx24p"
+find collections/ansible_collections/community/library_inventory_filtering_v1 \
+  -maxdepth 2 \
+  -type f | head -20
+```
+
+---
+
+## Example 1 – Identify what the collection provides
+
+Use:
+
+```bash id="u23m60"
+ansible-doc -l
+```
+
+and the collection documentation to determine:
+
+1. Does this collection primarily configure Linux services?
+2. What type of Ansible functionality does it provide?
+3. Why might another collection depend on it?
+
+---
+
+## Example 2 – Inspect collection dependencies
+
+Ansible collections can depend on other collections.
+
+Look inside the installed collection metadata.
+
+Start with:
+
+```bash id="x56r4v"
+find collections/ansible_collections \
+  -name MANIFEST.json | head
+```
+
+Inspect one:
+
+```bash id="j2zkwm"
+less collections/ansible_collections/community/general/MANIFEST.json
+```
+
+Also inspect:
+
+```bash id="rjbhxf"
+ansible-galaxy collection list -p ./collections
+```
+
+Question:
+
+> Why is dependency management important when sharing an Ansible project with other administrators?
+
+---
+
+# 9.10 Understand `requirements.yml`
+
+Instead of telling another administrator:
+
+```text id="wr9tlq"
+Please install these six collections manually...
+```
+
+we store project dependencies as code:
+
+```yaml id="5zq9dx"
+---
+collections:
+  - name: ansible.posix
+  - name: community.general
+  - name: community.crypto
+  - name: community.dns
+  - name: community.library_inventory_filtering_v1
+  - name: community.postgresql
+```
+
+Another administrator can then run:
+
+```bash id="dbp78q"
+ansible-galaxy collection install \
+  -r requirements.yml \
+  -p ./collections
+```
+
+This idea will become even more important later when we prepare our Ansible project for professional delivery through Git.
+
+---
+
+# 9.11 Student challenge – Discover a collection
+
+Choose **one collection** from this unit that interests you.
+
+Do not use a module that we already explored.
+
+Start with:
+
+```bash id="luhbcu"
+ansible-doc -l
+```
+
+Filter for your collection, for example:
+
+```bash id="v6nckw"
+ansible-doc -l | grep '^community.general'
+```
+
+Select one module and inspect it:
+
+```bash id="p7i6ql"
+ansible-doc <module-FQCN>
+```
+
+Prepare a short explanation for another student covering:
+
+1. What does the module do?
+2. What are its most important parameters?
+3. Does it require root privileges?
+4. Does it require additional Python packages or external software?
+5. Would it be safe to execute on our shared `rhel1`–`rhel3` systems?
+6. How would you make resources student-specific if multiple students used the module simultaneously?
+
+If it is safe and the required infrastructure exists, create a small playbook and test it.
+
+Otherwise, only prepare the playbook without executing it.
+
+---
+
+# 9.12 What did we learn?
+
+In this unit, you worked with several different collections:
+
+| Collection | Example use |
+|---|---|
+| `ansible.posix` | Linux/POSIX administration |
+| `community.general` | General-purpose community modules |
+| `community.crypto` | Keys, CSRs and certificates |
+| `community.dns` | DNS automation |
+| `community.postgresql` | PostgreSQL automation |
+| `community.library_inventory_filtering_v1` | Ansible plugin/inventory functionality |
+
+You learned that collections extend Ansible beyond:
+
+```text id="vfwcyx"
+ansible.builtin
+```
+
+and that modules are normally referenced using their FQCN:
+
+```text id="onph9f"
+namespace.collection.module
+```
+
+For example:
+
+```text id="8f2tgz"
+ansible.posix.firewalld
+community.general.ini_file
+community.crypto.openssl_privatekey
+community.postgresql.postgresql_db
+```
+
+You also learned an important distinction:
+
+> **Installing a collection makes its Ansible content available. It does not automatically provide the external infrastructure, credentials, services, or Python dependencies required by every module in that collection.**
+
+Finally, when working on shared systems, always ask:
+
+> **Will this task create or modify a resource that another student is also using?**
+
+Whenever possible, derive unique resource names from:
+
+```text id="p5e3ya"
+{{ ansible_user }}
+```
+
+For example:
+
+```text id="eaj97q"
+/opt/training/{{ ansible_user }}
+training_{{ ansible_user }}
+app_{{ ansible_user }}
+```
+
+This makes your automation safer and more reusable in shared environments.
+
+## Next
+
+In the next unit, you will use **conditionals** to make Ansible decide whether a task should execute based on variables, facts, and previous results.
 
 # 10. Conditionals
 
