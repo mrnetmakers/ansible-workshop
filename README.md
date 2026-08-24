@@ -979,9 +979,9 @@ rhel2       Managed host
 rhel3       Managed host
 ```
 
-You initially access these systems using the `ec_user` account and the SSH key provided for the lab.
+You initially access these systems using the `ec2_user` account and the SSH key provided for the lab.
 
-However, **Ansible should not run as `ec_user`**.
+However, **Ansible should not run as `ec2_user`**.
 
 Each student has a dedicated account named:
 
@@ -1019,7 +1019,7 @@ There are two different SSH authentication scenarios in this lab.
 You connect to the RHEL instances as:
 
 ```text
-ec_user
+ec2_user
 ```
 
 using the SSH private key provided for the lab.
@@ -1027,7 +1027,7 @@ using the SSH private key provided for the lab.
 For example, from your workstation you might connect with a command similar to:
 
 ```bash
-ssh -i <provided-key> ec_user@<server>
+ssh -i <provided-key> ec2_user@<server>
 ```
 
 The exact connection information will be provided by your instructor.
@@ -1087,7 +1087,7 @@ We therefore need to create an SSH key pair for `studXX` on `rhelmain` and insta
 
 # 4.2 Switch to your student account on rhelmain
 
-First connect to `rhelmain` using the `ec_user` account as described by your instructor.
+First connect to `rhelmain` using the `ec2_user` account as described by your instructor.
 
 Check your current user:
 
@@ -1098,7 +1098,7 @@ whoami
 You should see:
 
 ```text
-ec_user
+ec2_user
 ```
 
 Now switch to your assigned student account.
@@ -1366,7 +1366,7 @@ rhel3
 
 # 4.8 Install your public key on rhel1
 
-Open a separate terminal and connect to `rhel1` using the lab's `ec_user` credentials and SSH key.
+Open a separate terminal and connect to `rhel1` using the lab's `ec2_user` credentials and SSH key.
 
 Once connected, verify:
 
@@ -1377,7 +1377,7 @@ whoami
 Expected:
 
 ```text
-ec_user
+ec2_user
 ```
 
 Now switch to your student account.
@@ -1638,7 +1638,7 @@ Ansible does not normally require you to interactively log in and type commands.
 
 Now install the same public key on `rhel2`.
 
-Connect to `rhel2` as `ec_user`.
+Connect to `rhel2` as `ec2_user`.
 
 Switch to your account:
 
@@ -2873,13 +2873,13 @@ You should receive successful results from all three managed hosts.
 
 Create:
 
-```bash
+```bash id="ng9yex"
 vi playbooks/03_remote_hostname.yml
 ```
 
 Add:
 
-```yaml
+```yaml id="dl4mta"
 ---
 - name: Display remote hostnames
   hosts: managed
@@ -2894,13 +2894,13 @@ Add:
 
 Run:
 
-```bash
+```bash id="1jewg0"
 ansible-playbook playbooks/03_remote_hostname.yml
 ```
 
 Notice:
 
-```yaml
+```yaml id="hcc9r9"
 changed_when: false
 ```
 
@@ -2908,13 +2908,13 @@ The `hostname` command only reads information. It does not modify the managed ho
 
 Without this setting, the `command` module normally reports the task as:
 
-```text
+```text id="k5anli"
 changed
 ```
 
 By adding:
 
-```yaml
+```yaml id="hvtc2m"
 changed_when: false
 ```
 
@@ -2924,17 +2924,123 @@ we tell Ansible:
 
 The result should therefore be reported as:
 
-```text
+```text id="v8pjrj"
 ok
 ```
 
 instead of:
 
-```text
+```text id="v9alws"
 changed
 ```
 
 ---
+
+### Store and display the command result
+
+So far, Ansible executed the `hostname` command, but we did not use its result in another task.
+
+Ansible can store the result of a task in a variable using:
+
+```text id="81yfxr"
+register
+```
+
+Modify your playbook:
+
+```yaml id="o4z8cf"
+---
+- name: Display remote hostnames
+  hosts: managed
+  gather_facts: false
+
+  tasks:
+    - name: Get hostname
+      ansible.builtin.command:
+        cmd: hostname
+      register: hostname_result
+      changed_when: false
+
+    - name: Display hostname
+      ansible.builtin.debug:
+        msg: "The hostname of {{ inventory_hostname }} is {{ hostname_result.stdout }}"
+```
+
+Run the playbook again:
+
+```bash id="2b6ehy"
+ansible-playbook playbooks/03_remote_hostname.yml
+```
+
+You should now see output similar to:
+
+```text id="ff39zk"
+TASK [Display hostname]
+ok: [rhel1] => {
+    "msg": "The hostname of rhel1 is rhel1"
+}
+```
+
+The line:
+
+```yaml id="g45t5u"
+register: hostname_result
+```
+
+stores the result of the command in a variable named:
+
+```text id="7me03y"
+hostname_result
+```
+
+Command results contain several values. One of the most commonly used is:
+
+```text id="ehddg4"
+stdout
+```
+
+which contains the standard output of the command.
+
+Therefore:
+
+```text id="kjcdaz"
+{{ hostname_result.stdout }}
+```
+
+contains the output produced by:
+
+```bash id="uw1f3i"
+hostname
+```
+
+You can inspect the **complete registered result** by temporarily adding:
+
+```yaml id="x3o0vu"
+    - name: Display complete command result
+      ansible.builtin.debug:
+        var: hostname_result
+```
+
+Run the playbook again and look for values such as:
+
+```text id="vtidty"
+stdout
+stderr
+rc
+changed
+```
+
+You will work with `register` in more detail later in the workshop. For now, remember the basic pattern:
+
+```text id="k87k32"
+Task executes
+     ↓
+register
+     ↓
+Variable stores result
+     ↓
+debug / msg uses result
+```
 
 ## 5.23 Create a file remotely
 
@@ -3099,10 +3205,10 @@ playbooks/07_student_directory.yml
 It should create:
 
 ```text
-/tmp/ansible-workshop
+/tmp/ansible-workshop-studXX
 ```
 
-on all managed systems.
+on all managed systems. Replace studXX with your student id.
 
 Use:
 
@@ -3712,10 +3818,10 @@ ansible.builtin.copy
 
 The playbook should create a student-specific directory below `/opt/training`.
 
-For example, for `stud10`:
+For example, for `stud01`:
 
 ```text
-/opt/training/stud10
+/opt/training/stud01
 ```
 
 Your playbook should use the Ansible remote-user variable instead of hard-coding a student name.
@@ -3775,7 +3881,7 @@ ansible managed -b -m ansible.builtin.command -a "ls -al /opt/training/$USER"
 You should see your own student-specific path on all three managed hosts, for example:
 
 ```text
-/opt/training/stud10
+/opt/training/stud01
 ```
 
 This is an important pattern for shared lab environments:
@@ -3811,7 +3917,7 @@ inventory/group_vars/managed.yml
 For example:
 
 ```yaml id="3uj1yw"
-ansible_user: stud10
+ansible_user: stud01
 ```
 
 ---
@@ -3843,7 +3949,7 @@ name: "{{ ansible_user | replace('stud', 'ansible') }}"
 For example, if:
 
 ```yaml id="ghqgvf"
-ansible_user: stud10
+ansible_user: stud01
 ```
 
 the expression:
@@ -3915,7 +4021,7 @@ Check:
 echo "$ANSIBLE_USER"
 ```
 
-For `stud10`, this should display:
+For `stud01`, this should display:
 
 ```text id="fzbt4c"
 ansible10
@@ -4092,10 +4198,10 @@ Instead, the playbook uses:
 {{ ansible_user }}
 ```
 
-For `stud10`, Ansible therefore manages:
+For `stud01`, Ansible therefore manages:
 
 ```text id="xdseou"
-/opt/training/stud10/motd
+/opt/training/stud01/motd
 ```
 
 while `stud03` manages:
@@ -4177,7 +4283,7 @@ ansible managed -b -m ansible.builtin.command -a "cat /opt/training/$USER/motd"
 Your file should now contain:
 
 ```text id="3x3ypo"
-This server is managed by stud10 using Ansible.
+This server is managed by stud01 using Ansible.
 Welcome to the Ansible Deep Dive Workshop!
 ```
 
@@ -4226,7 +4332,7 @@ This is another example of **idempotency**.
 Imagine that instead of `lineinfile`, we had executed:
 
 ```bash id="3i18lr"
-echo "Welcome to the Ansible Deep Dive Workshop!" >> /opt/training/stud10/motd
+echo "Welcome to the Ansible Deep Dive Workshop!" >> /opt/training/stud01/motd
 ```
 
 Running that command three times would result in:
@@ -4374,3 +4480,2695 @@ And the most important rule from this unit is:
 
 > Prefer a dedicated Ansible module whenever one exists instead of solving every task with `command` or `shell`.
 
+# 9. Collections and Ansible Galaxy
+
+So far, most modules we have used came from:
+
+```text id="5tv9hr"
+ansible.builtin
+```
+
+Examples include:
+
+```text id="ofxjqp"
+ansible.builtin.package
+ansible.builtin.file
+ansible.builtin.copy
+ansible.builtin.user
+```
+
+Ansible can be extended with additional content through **collections**.
+
+A collection can contain:
+
+- modules
+- plugins
+- roles
+- playbooks
+- documentation
+
+Collections are distributed through **Ansible Galaxy** and other sources.
+
+The general naming format for content inside a collection is:
+
+```text id="bfv0z4"
+namespace.collection.module
+```
+
+For example:
+
+```text id="40q0g5"
+community.general.ini_file
+```
+
+Here:
+
+```text id="umtz28"
+community
+```
+
+is the namespace,
+
+```text id="c2fw4e"
+general
+```
+
+is the collection,
+
+and:
+
+```text id="i8t0ke"
+ini_file
+```
+
+is the module.
+
+This complete name is called the **Fully Qualified Collection Name**, or **FQCN**.
+
+---
+
+## 9.1 Inspect Ansible collections
+
+Before installing additional collections, let's first understand where Ansible looks for collection content.
+
+Make sure you are in your workshop directory:
+
+```bash id="yd7ncd"
+cd ~/ansible-workshop
+```
+
+Check:
+
+```bash id="hufp13"
+pwd
+```
+
+You should see something similar to:
+
+```text id="4v42bs"
+/home/stud01/ansible-workshop
+```
+
+---
+
+### Check the project collection directory
+
+This workshop uses a **project-local collection directory**:
+
+```text id="7pt6g3"
+collections/
+```
+
+Check whether it already exists:
+
+```bash id="1drc5p"
+ls -ld collections
+```
+
+If the directory does not exist yet, create it:
+
+```bash id="16v2fn"
+mkdir -p collections
+```
+
+At this point it may still be empty.
+
+Check:
+
+```bash id="0jll2j"
+ls -la collections
+```
+
+---
+
+### List collections from a specific path
+
+`ansible-galaxy` can explicitly be told where to look for collections.
+
+Run:
+
+```bash id="tx6f1w"
+ansible-galaxy collection list --collections-path ./collections
+```
+
+Since we have not installed the workshop collections yet, the directory may currently contain no collections.
+
+That is expected.
+
+Depending on your Ansible version and configuration, running:
+
+```bash id="z13epp"
+ansible-galaxy collection list
+```
+
+without specifying a collection path may also produce an error such as:
+
+```text id="gdswdr"
+ERROR! - None of the provided paths were usable.
+Please specify a valid path with --collections-path
+```
+
+For this workshop, we will therefore explicitly use the project-local directory:
+
+```text id="puxq3i"
+./collections
+```
+
+---
+
+### Check Ansible's configured collection paths
+
+You can also ask Ansible which collection paths are currently configured:
+
+```bash id="ak8e1j"
+ansible-config dump | grep COLLECTIONS_PATHS
+```
+
+Depending on your Ansible Core version, the setting may be displayed slightly differently.
+
+You can also check:
+
+```bash id="spgb9i"
+ansible --version
+```
+
+Look for the line showing the collection locations, if present.
+
+The important point is that collections must exist in a location where Ansible knows how to find them.
+
+---
+
+### Try to inspect a collection module
+
+Now try:
+
+```bash id="6lgtyo"
+ansible-doc community.general.ini_file
+```
+
+If `community.general` is not installed yet, Ansible will not be able to display the module documentation.
+
+That is fine.
+
+In the next exercise, we will install the required collections into:
+
+```text id="6cd7v2"
+./collections
+```
+
+and then repeat the check.
+
+---
+
+### Why use project-local collections?
+
+Instead of relying on collections installed globally on `rhelmain`, this workshop keeps its additional collections inside the project:
+
+```text id="4spfnv"
+ansible-workshop/
+├── ansible.cfg
+├── requirements.yml
+├── inventory/
+├── playbooks/
+└── collections/
+```
+
+This has several advantages.
+
+Each student gets their own collection installation:
+
+```text id="m7jey4"
+/home/stud01/ansible-workshop/collections/
+/home/stud02/ansible-workshop/collections/
+/home/stud03/ansible-workshop/collections/
+...
+```
+
+Students therefore do not modify a shared system-wide Ansible installation.
+
+It also makes the project more reproducible: `requirements.yml` defines **what the project needs**, while `collections/` is the location where those dependencies are installed.
+
+In the next step, you will use `requirements.yml` to install those dependencies.
+
+## 9.2 Install compatible collection versions
+
+Our RHEL 9 training environment uses a specific ansible version. For example:
+
+```text
+ansible-core 2.14.18
+```
+
+Collections evolve independently from Ansible Core. New collection releases may therefore require a newer Ansible version than the one installed on our training system.
+
+For this workshop, we will use **fixed collection versions** that are compatible with the Ansible Core version used in the lab.
+
+This also ensures that every student works with exactly the same collection versions.
+
+### Check your Ansible version
+
+Run:
+
+```bash
+ansible --version
+```
+
+You should see:
+
+```text
+core 2.14.18
+```
+
+The exact formatting may differ slightly.
+
+---
+
+### Update `requirements.yml`
+
+Open:
+
+```bash
+vi requirements.yml
+```
+
+Replace the collection definitions with:
+
+```yaml
+---
+collections:
+  - name: ansible.posix
+    version: "1.4.0"
+
+  - name: community.general
+    version: "6.0.1"
+
+  - name: community.crypto
+    version: "2.8.1"
+
+  - name: community.dns
+    version: "2.4.1"
+
+  - name: community.postgresql
+    version: "2.3.0"
+```
+
+The `version` field pins each dependency to a specific version.
+
+This is important for reproducible automation.
+
+Without version pinning:
+
+```yaml
+- name: community.general
+```
+
+Ansible Galaxy normally installs a current version, which may require a newer Ansible Core release.
+
+With version pinning:
+
+```yaml
+- name: community.general
+  version: "6.0.1"
+```
+
+every student receives the same tested version.
+
+---
+
+### Remove previously installed incompatible collections
+
+If you already installed newer collection versions during an earlier attempt, remove the project-local collection directory:
+
+```bash
+rm -rf collections
+```
+
+Recreate it:
+
+```bash
+mkdir -p collections
+```
+
+This only removes collections installed inside your own workshop directory.
+
+It does not modify the system-wide Ansible installation.
+
+---
+
+### Install the workshop collections
+
+Run:
+
+```bash
+ansible-galaxy collection install -r requirements.yml --collections-path ./collections
+```
+
+Ansible Galaxy will download and install the versions specified in `requirements.yml`.
+
+---
+
+### Verify the installation
+
+Run:
+
+```bash
+ansible-galaxy collection list --collections-path ./collections
+```
+
+You should see output similar to:
+
+```text
+Collection            Version
+--------------------- -------
+ansible.posix         1.4.0
+community.crypto      2.8.1
+community.dns         2.4.1
+community.general     6.0.1
+community.postgresql  2.3.0
+```
+
+Your project now has a predictable dependency set that matches the Ansible Core generation used in this workshop.
+
+> In real projects, version pinning also protects automation from unexpected behavior changes caused by automatically installing newer collection releases.
+
+# 9.4 Collection 1 – `ansible.posix`
+
+The `ansible.posix` collection contains modules and plugins related to POSIX/Linux system administration.
+
+Examples include modules for:
+
+```text id="l31qxi"
+SELinux
+firewalld
+mounts
+sysctl
+authorized_keys
+```
+
+Explore the collection:
+
+```bash id="st6b5e"
+ansible-doc -l | grep '^ansible.posix'
+```
+
+---
+
+## Example 1 – Inspect SELinux configuration
+
+First inspect:
+
+```bash id="8ecoxc"
+ansible-doc ansible.posix.selinux
+```
+
+Find the parameters:
+
+```text id="0zqxb3"
+policy
+state
+```
+
+Do **not** change the SELinux configuration.
+
+Instead, check the current state on all managed systems:
+
+```bash id="idjhc3"
+ansible managed -m ansible.builtin.command -a "getenforce"
+```
+
+Then answer:
+
+1. Which values does `state` accept?
+2. Which parameter controls the SELinux policy?
+3. Can the module make the configuration persistent?
+4. Would changing SELinux mode be safe in a shared training environment?
+
+The last question is important.
+
+Not every module that you discover should automatically be executed.
+
+---
+
+## Example 2 – Manage a student-specific firewall port
+
+Now inspect:
+
+```bash id="tzm3kt"
+ansible-doc ansible.posix.firewalld
+```
+
+In this lab, multiple students share:
+
+```text id="w0b82a"
+rhel1
+rhel2
+rhel3
+```
+
+Therefore, students should not all manage the same firewall rule.
+
+Instead, each student will use their student number as part of the port.
+
+For example:
+
+```text id="9dkd5h"
+stud01 → 8001/tcp
+stud02 → 8002/tcp
+stud10 → 8010/tcp
+stud15 → 8015/tcp
+```
+
+Inspect:
+
+```bash id="owmqf4"
+cat playbooks/25_firewall.yml
+```
+
+The playbook should derive the port from `ansible_user`, for example:
+
+```yaml id="45ok0y"
+student_number: "{{ ansible_user | regex_replace('^stud', '') }}"
+student_port: "80{{ student_number }}"
+```
+
+The firewall task can then use:
+
+```yaml id="j3bf6b"
+- name: Open student-specific firewall port
+  ansible.posix.firewalld:
+    port: "{{ student_port }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+```
+
+Run:
+
+```bash id="3f4dml"
+ansible-playbook playbooks/25_firewall.yml
+```
+
+Verify:
+
+```bash id="yyoh9d"
+ansible managed -b -m ansible.builtin.command -a "firewall-cmd --list-ports"
+```
+
+Find your own port in the output.
+
+---
+
+# 9.5 Collection 2 – `community.general`
+
+`community.general` is a large community-maintained collection containing modules for many different technologies and configuration formats.
+
+Explore:
+
+```bash id="m51gjd"
+ansible-doc -l | grep '^community.general' | head -30
+```
+
+---
+
+## Example 1 – Manage an INI file
+
+Inspect:
+
+```bash id="kgssq9"
+ansible-doc community.general.ini_file
+```
+
+Then inspect the provided playbook:
+
+```bash id="n0pn07"
+cat playbooks/26_ini.yml
+```
+
+Because the managed hosts are shared, the configuration file must be student-specific.
+
+The playbook should manage:
+
+```text id="qurxrh"
+/opt/training/studXX/training-app.conf
+```
+
+For example:
+
+```yaml id="6gv8h4"
+path: "/opt/training/{{ ansible_user }}/training-app.conf"
+```
+
+Run:
+
+```bash id="p1vdtw"
+ansible-playbook playbooks/26_ini.yml
+```
+
+Verify:
+
+```bash id="v3nm4r"
+ansible managed -b -m ansible.builtin.command -a "cat /opt/training/$USER/training-app.conf"
+```
+
+---
+
+### Customize the INI file
+
+Add another task that creates:
+
+```ini id="ox7h68"
+[logging]
+level=info
+```
+
+Run:
+
+```bash id="ixsaxm"
+ansible-playbook playbooks/26_ini.yml
+```
+
+Verify the result.
+
+Then run the playbook a second time.
+
+Question:
+
+> Does `level=info` appear more than once?
+
+---
+
+## Example 2 – Manage a student-specific archive
+
+Find the archive module:
+
+```bash id="dnvpjo"
+ansible-doc community.general.archive
+```
+
+Your existing directory:
+
+```text id="kmx4cn"
+/opt/training/studXX
+```
+
+contains files created during previous exercises.
+
+Create:
+
+```text id="frvf0d"
+playbooks/27_archive.yml
+```
+
+Use `community.general.archive` to create:
+
+```text id="0fqdwa"
+/tmp/studXX-training.tar.gz
+```
+
+from:
+
+```text id="v4mrcu"
+/opt/training/studXX
+```
+
+Do not hard-code your username.
+
+Use:
+
+```text id="3fjx21"
+{{ ansible_user }}
+```
+
+Run your playbook and verify the archive:
+
+```bash id="i2t5ar"
+ansible managed -b -m ansible.builtin.command -a "ls -lh /tmp/$USER-training.tar.gz"
+```
+
+---
+
+# 9.6 Collection 3 – `community.crypto`
+
+The `community.crypto` collection contains modules for working with:
+
+- private keys
+- public keys
+- certificates
+- certificate signing requests
+- OpenSSL-related objects
+
+Explore:
+
+```bash id="0o4c2c"
+ansible-doc -l | grep '^community.crypto' | head -30
+```
+
+This collection is particularly useful when automating TLS infrastructure.
+
+---
+
+## Example 1 – Create a private key
+
+Inspect:
+
+```bash id="h9uy41"
+ansible-doc community.crypto.openssl_privatekey
+```
+
+Create:
+
+```text id="okrvqf"
+playbooks/28_private_key.yml
+```
+
+The playbook should create a private key for each student under:
+
+```text id="1l3n45"
+/opt/training/studXX/tls/
+```
+
+First ensure that the directory exists:
+
+```yaml id="rklj22"
+- name: Create TLS directory
+  ansible.builtin.file:
+    path: "/opt/training/{{ ansible_user }}/tls"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+```
+
+Then use:
+
+```text id="90k9a9"
+community.crypto.openssl_privatekey
+```
+
+to create:
+
+```text id="l99r3c"
+/opt/training/studXX/tls/server.key
+```
+
+Run your playbook:
+
+```bash id="z0icwp"
+ansible-playbook playbooks/28_private_key.yml
+```
+
+Verify:
+
+```bash id="4m5v5c"
+ansible managed -b -m ansible.builtin.command -a "ls -l /opt/training/$USER/tls/server.key"
+```
+
+Run the playbook a second time and observe whether the key is recreated.
+
+---
+
+## Example 2 – Create a certificate signing request
+
+Inspect:
+
+```bash id="g86nnv"
+ansible-doc community.crypto.openssl_csr
+```
+
+Extend your playbook with a task that creates:
+
+```text id="ojp1dt"
+/opt/training/studXX/tls/server.csr
+```
+
+Use the private key you created in the previous task.
+
+Set the common name to something student-specific, for example:
+
+```yaml id="1g89mx"
+common_name: "{{ ansible_user }}.training.example"
+```
+
+For `stud01`, this would become:
+
+```text id="lmlzq7"
+stud01.training.example
+```
+
+Run the playbook and verify:
+
+```bash id="vmm9vi"
+ansible managed -b -m ansible.builtin.command -a "ls -l /opt/training/$USER/tls/"
+```
+
+You should now have both:
+
+```text id="m9w2hq"
+server.key
+server.csr
+```
+
+# 9.7 What did we learn?
+
+In this unit, you worked with several different collections:
+
+| Collection | Example use |
+|---|---|
+| `ansible.posix` | Linux/POSIX administration |
+| `community.general` | General-purpose community modules |
+| `community.crypto` | Keys, CSRs and certificates |
+
+You learned that collections extend Ansible beyond:
+
+```text id="vfwcyx"
+ansible.builtin
+```
+
+and that modules are normally referenced using their FQCN:
+
+```text id="onph9f"
+namespace.collection.module
+```
+
+For example:
+
+```text id="8f2tgz"
+ansible.posix.firewalld
+community.general.ini_file
+community.crypto.openssl_privatekey
+```
+
+You also learned an important distinction:
+
+> **Installing a collection makes its Ansible content available. It does not automatically provide the external infrastructure, credentials, services, or Python dependencies required by every module in that collection.**
+
+Finally, when working on shared systems, always ask:
+
+> **Will this task create or modify a resource that another student is also using?**
+
+Whenever possible, derive unique resource names from:
+
+```text id="p5e3ya"
+{{ ansible_user }}
+```
+
+For example:
+
+```text id="eaj97q"
+/opt/training/{{ ansible_user }}
+training_{{ ansible_user }}
+app_{{ ansible_user }}
+```
+
+This makes your automation safer and more reusable in shared environments.
+
+# 10. Conditionals
+
+## 10.1 Basic boolean
+
+```bash
+cat playbooks/30_condition_basic.yml
+ansible-playbook playbooks/30_condition_basic.yml
+```
+
+Change:
+
+```yaml
+install_webserver: true
+```
+
+to:
+
+```yaml
+install_webserver: false
+```
+
+Run again and observe `skipping`.
+
+## 10.2 String comparison
+
+```bash
+cat playbooks/31_condition_string.yml
+ansible-playbook playbooks/31_condition_string.yml
+```
+
+Change the environment from `development` to `production`. Run again.
+
+Add a third environment named `testing` and an appropriate task.
+
+## 10.3 Multiple conditions
+
+```bash
+cat playbooks/32_condition_multiple.yml
+ansible-playbook playbooks/32_condition_multiple.yml
+```
+
+The task executes only when both conditions are true.
+
+Change:
+
+```yaml
+configure_web: false
+```
+
+and rerun.
+
+## 10.4 Advanced condition with facts and list membership
+
+```bash
+cat playbooks/32b_condition_advanced.yml
+ansible-playbook playbooks/32b_condition_advanced.yml
+```
+
+Increase:
+
+```yaml
+minimum_memory_mb: 1024
+```
+
+to a value larger than your lab VMs contain, for example `16384`. Observe the result.
+
+---
+
+# 11. Register task results
+
+## 11.1 Capture command output
+
+```bash
+cat playbooks/33_register.yml
+ansible-playbook playbooks/33_register.yml
+```
+
+Study the registered object. Find:
+
+- `stdout`;
+- `stderr`;
+- `rc`;
+- `changed`.
+
+Add a task that displays only the return code.
+
+## 11.2 Combine `register` and `when`
+
+```bash
+cat playbooks/33b_register_condition.yml
+ansible-playbook playbooks/33b_register_condition.yml
+```
+
+Stop Apache temporarily on one host if your instructor permits it, then rerun the playbook limited to that host. Restore the service afterwards.
+
+The important pattern is:
+
+```text
+execute -> register -> evaluate -> take action
+```
+
+---
+
+# 12. Discover and use host facts
+
+Gather all facts:
+
+```bash
+ansible managed -m ansible.builtin.setup
+```
+
+Filter the output:
+
+```bash
+ansible managed -m ansible.builtin.setup -a "filter=ansible_distribution*"
+ansible managed -m ansible.builtin.setup -a "filter=ansible_memtotal_mb"
+ansible managed -m ansible.builtin.setup -a "filter=ansible_default_ipv4"
+```
+
+Run the facts playbook:
+
+```bash
+cat playbooks/34_facts.yml
+ansible-playbook playbooks/34_facts.yml
+```
+
+## Fact discovery challenge
+
+Modify `playbooks/34_facts.yml` so it also displays:
+
+- hostname;
+- kernel version;
+- processor count;
+- default IPv4 address.
+
+Use facts rather than shell commands.
+
+---
+
+# 13. Loops
+
+## 13.1 Basic loop
+
+```bash
+cat playbooks/40_loop_basic.yml
+ansible-playbook playbooks/40_loop_basic.yml
+```
+
+Add two more items.
+
+## 13.2 Loop over package names
+
+```bash
+cat playbooks/41_loop_packages.yml
+ansible-playbook playbooks/41_loop_packages.yml
+```
+
+Now consider this alternative:
+
+```yaml
+- name: Install all packages in one operation
+  ansible.builtin.package:
+    name: "{{ training_packages }}"
+    state: present
+```
+
+Replace the loop with the list-based version and compare the output.
+
+**Lesson:** not every task that can use a loop should use a loop.
+
+## 13.3 Loop over dictionaries
+
+Lists can also contain dictionaries. This is very useful when every item has several properties.
+
+In this exercise, you will create multiple users. Because the managed hosts are shared by all students, every username must contain your individual **student ID**.
+
+For example:
+
+```text id="f3n4ly"
+Student     Users
+-------     -------------------------------
+stud01      developer01, operator01, auditor01
+stud02      developer02, operator02, auditor02
+stud10      developer10, operator10, auditor10
+```
+
+This prevents students from modifying each other's accounts.
+
+---
+
+### Inspect the playbook
+
+Open:
+
+```bash id="x6ezxl"
+cat playbooks/42_loop_dictionary.yml
+```
+
+The playbook contains a list of dictionaries describing several users.
+
+Modify it so it looks similar to:
+
+```yaml id="9iz7du"
+---
+- name: Create multiple student-specific users
+  hosts: managed
+  become: true
+
+  vars:
+    student_id: "{{ ansible_user | regex_replace('^stud', '') }}"
+
+    training_users:
+      - name: developer
+        shell: /bin/bash
+        comment: "Development user"
+
+      - name: operator
+        shell: /bin/bash
+        comment: "Operations user"
+
+      - name: auditor
+        shell: /sbin/nologin
+        comment: "Audit user"
+
+  tasks:
+    - name: Create training users
+      ansible.builtin.user:
+        name: "{{ item.name }}{{ student_id }}"
+        shell: "{{ item.shell }}"
+        comment: "{{ item.comment }}"
+        state: present
+      loop: "{{ training_users }}"
+```
+
+---
+
+### Understand the student ID
+
+Your Ansible remote user is already stored in:
+
+```text id="52jbql"
+{{ ansible_user }}
+```
+
+For example:
+
+```text id="j99hxq"
+stud01
+```
+
+This expression:
+
+```text id="g16gcg"
+{{ ansible_user | regex_replace('^stud', '') }}
+```
+
+removes `stud` from the beginning of the string.
+
+The result is:
+
+```text id="vb0zvw"
+10
+```
+
+We store that result in:
+
+```yaml id="i8jpw3"
+student_id: "{{ ansible_user | regex_replace('^stud', '') }}"
+```
+
+The task can then combine:
+
+```text id="fdftle"
+item.name + student_id
+```
+
+For example:
+
+```text id="tm0o5g"
+developer + 10 → developer10
+operator  + 10 → operator10
+auditor   + 10 → auditor10
+```
+
+---
+
+### Run the playbook
+
+Execute:
+
+```bash id="8m80x6"
+ansible-playbook playbooks/42_loop_dictionary.yml
+```
+
+Ansible should loop over all three dictionaries and create three student-specific users on:
+
+```text id="a6njyw"
+rhel1
+rhel2
+rhel3
+```
+
+---
+
+### Verify the users
+
+You can derive your student ID in the shell as well:
+
+```bash id="jow19p"
+STUDENT_ID="${USER#stud}"
+```
+
+Check:
+
+```bash id="zm7p3e"
+echo "$STUDENT_ID"
+```
+
+For `stud01`, this returns:
+
+```text id="cnq79u"
+10
+```
+
+Now verify your users:
+
+```bash id="q3ofus"
+ansible managed -m ansible.builtin.command -a "getent passwd developer${STUDENT_ID}"
+```
+
+Try the other users:
+
+```bash id="q3ofus"
+ansible managed -m ansible.builtin.command -a "getent passwd operator${STUDENT_ID}"
+```
+
+```bash id="q3ofus"
+ansible managed -m ansible.builtin.command -a "getent passwd auditor${STUDENT_ID}"
+```
+
+---
+
+### Challenge 1 – Add another user
+
+Add a **fourth dictionary** to:
+
+```yaml id="h2y4im"
+training_users:
+```
+
+Create a user with the base name:
+
+```text id="1yjf4k"
+support
+```
+
+Use:
+
+```text id="fbpkzs"
+/bin/bash
+```
+
+as its shell and choose a suitable comment.
+
+Do **not** include your student ID directly in the dictionary.
+
+In other words, do not write:
+
+```yaml id="m4psq8"
+name: support10
+```
+
+Instead, use:
+
+```yaml id="1ty2x5"
+name: support
+```
+
+The task should automatically append your student ID.
+
+For `stud01`, the resulting user should therefore be:
+
+```text id="8w0k96"
+support10
+```
+
+For `stud03`:
+
+```text id="ocgjj5"
+support03
+```
+
+Run the playbook again:
+
+```bash id="93o4y5"
+ansible-playbook playbooks/42_loop_dictionary.yml
+```
+
+Verify your new account:
+
+```bash id="8efqzb"
+STUDENT_ID="${USER#stud}"
+
+ansible managed -m ansible.builtin.command -a "getent passwd support${STUDENT_ID}"
+```
+
+---
+
+### Challenge 2 – Customize the comments
+
+Change the `comment` value for every user so that it also contains your Ansible username.
+
+For example, the resulting comments for `stud01` could be:
+
+```text id="sy2dce"
+Development user managed by stud01
+Operations user managed by stud01
+Audit user managed by stud01
+Support user managed by stud01
+```
+
+Do not hard-code `stud01`.
+
+Use:
+
+```text id="67f2xk"
+{{ ansible_user }}
+```
+
+in the appropriate place.
+
+Run the playbook again and verify one account:
+
+```bash id="6e1hcm"
+ansible managed -m ansible.builtin.command -a "getent passwd developer${STUDENT_ID}"
+```
+
+Question:
+
+> What did Ansible report as `changed`, and why?
+
+Run the playbook once more without changing anything.
+
+Question:
+
+> Why should all four user items now report `ok`?
+
+---
+
+# 14. Transition to roles and Git
+
+> **From this point onward, all new configuration tasks must be implemented in roles.** Top-level playbooks should stay small and select hosts/roles rather than containing large task lists.
+
+## 14.1 Examine the role layout
+
+```bash
+find roles/webserver -maxdepth 2 -type f | sort
+```
+
+Key directories:
+
+```text
+tasks/       tasks executed by the role
+handlers/    event-driven tasks
+templates/   Jinja2 templates
+files/       static files
+defaults/    customizable default variables
+vars/        higher-precedence role variables
+meta/        role metadata
+```
+
+The supplied repository already contains reference roles. To learn how Ansible generates one, create a disposable role:
+
+```bash
+ansible-galaxy role init ~/example_role
+find ~/example_role -maxdepth 2 -type f | sort
+rm -rf ~/example_role
+```
+
+## 14.2 Create your own Git branch and first commit
+
+Because you cloned the instructor repository, it already contains Git history.
+
+For the workshop, create your own branch:
+
+```bash id="8y8v03"
+git switch -c studXX-workshop
+```
+
+Replace `studXX` with your username.
+
+For example:
+
+```bash id="a83q5m"
+git switch -c stud01-workshop
+```
+
+Verify your current branch:
+
+```bash id="mqkjma"
+git branch --show-current
+```
+
+You should see your student-specific branch, for example:
+
+```text id="3bnf5s"
+stud01-workshop
+```
+
+---
+
+### Configure your Git identity
+
+Before Git can create commits, it needs to know who created them.
+
+Check the currently configured identity:
+
+```bash id="fb7zxl"
+git config user.name
+git config user.email
+```
+
+If these commands return no values, configure an identity for this repository.
+
+Use your student account as the name:
+
+```bash id="gvvdrp"
+git config user.name "$USER"
+```
+
+For the workshop, use a local example email address:
+
+```bash id="sq1ip4"
+git config user.email "$USER@ansible-workshop.local"
+```
+
+For `stud01`, this results in:
+
+```text id="q4qf8x"
+user.name  = stud01
+user.email = stud01@ansible-workshop.local
+```
+
+Verify:
+
+```bash id="tbttno"
+git config user.name
+git config user.email
+```
+
+You can also display both settings together:
+
+```bash id="mh5fs3"
+git config --local --list
+```
+
+> We intentionally do not use `--global`. The configuration should apply only to your workshop repository and should not modify your general Git configuration.
+
+---
+
+### Check your repository status
+
+Run:
+
+```bash id="pvsl99"
+git status
+```
+
+Git shows which files have been modified since the repository was cloned.
+
+By this point in the workshop, you may already have changed files such as:
+
+```text id="muj8yq"
+inventory/group_vars/managed.yml
+requirements.yml
+playbooks/...
+```
+
+---
+
+### Stage your changes
+
+Add your changes to the Git staging area:
+
+```bash id="aykqla"
+git add .
+```
+
+Check again:
+
+```bash id="dl0tnp"
+git status
+```
+
+Notice how the files are now listed under:
+
+```text id="3qgj2v"
+Changes to be committed:
+```
+
+This means the changes are staged and will be included in the next commit.
+
+---
+
+### Create your first commit
+
+Now create a commit:
+
+```bash id="ptu2pi"
+git commit -m "Configure student workshop environment"
+```
+
+You should now see output indicating that a new commit was created.
+
+---
+
+### View the Git history
+
+Run:
+
+```bash id="12tf0p"
+git log --oneline --decorate -5
+```
+
+Your new commit should appear at the top.
+
+You should also see your current branch pointing to this commit, for example:
+
+```text id="2g8w5q"
+a1b2c3d (HEAD -> stud01-workshop) Configure student workshop environment
+```
+
+The exact commit ID will be different.
+
+---
+
+### Understand what you just did
+
+You have now completed the basic Git workflow:
+
+```text id="ytghxb"
+Modify files
+     ↓
+git status
+     ↓
+git add .
+     ↓
+Staging area
+     ↓
+git commit
+     ↓
+Git history
+```
+
+Your changes are now stored as a commit in your own student branch.
+
+From this point onward, commit meaningful changes as you develop and customize your Ansible roles.
+
+For example:
+
+```bash id="7yd3fd"
+git add .
+git commit -m "Customize webserver role"
+```
+
+This gives you a history of how your Ansible project evolves during the remaining exercises.
+
+---
+
+# 15. Role exercise: `webserver`
+
+In this exercise, you will work with your first complete Ansible role.
+
+The managed hosts are shared by multiple students. Therefore, some resources will be shared while others must be student-specific.
+
+The Apache package and service are shared:
+
+```text
+httpd package
+httpd service
+```
+
+It does not matter which student installs or starts Apache first. Once the desired state has been reached, later executions by other students should simply report:
+
+```text
+ok
+```
+
+However, every student must deploy their **own website**.
+
+For example:
+
+```text
+Student     Document root               URL
+-------     --------------------------  ------------------------
+stud01      /var/www/html/stud01        http://rhel1/stud01/
+stud02      /var/www/html/stud02        http://rhel1/stud02/
+stud03      /var/www/html/stud03        http://rhel1/stud03/
+```
+
+The role therefore uses the existing:
+
+```text
+{{ ansible_user }}
+```
+
+variable to create student-specific resources.
+
+---
+
+## 15.1 Inspect the role structure
+
+Start by examining the role:
+
+```bash
+find roles/webserver -maxdepth 2 -type f | sort
+```
+
+Then inspect the default variables:
+
+```bash
+cat roles/webserver/defaults/main.yml
+```
+
+Inspect the tasks:
+
+```bash
+cat roles/webserver/tasks/main.yml
+```
+
+Inspect the handler:
+
+```bash
+cat roles/webserver/handlers/main.yml
+```
+
+Also inspect the templates:
+
+```bash
+ls -l roles/webserver/templates/
+```
+
+The role should contain at least:
+
+```text
+roles/webserver/
+├── defaults/
+│   └── main.yml
+├── handlers/
+│   └── main.yml
+├── tasks/
+│   └── main.yml
+└── templates/
+    ├── index.html.j2
+    └── student-site.conf.j2
+```
+
+---
+
+## 15.2 Understand the default variables
+
+Open:
+
+```bash
+cat roles/webserver/defaults/main.yml
+```
+
+The role should contain:
+
+```yaml
+---
+webserver_package: httpd
+webserver_service: httpd
+
+webserver_document_root: "/var/www/html/{{ ansible_user }}"
+webserver_title: "Ansible Workshop - {{ ansible_user }}"
+
+webserver_config_file: "/etc/httpd/conf.d/{{ ansible_user }}.conf"
+```
+
+For `stud01`, these variables become:
+
+```text
+webserver_document_root
+→ /var/www/html/stud01
+
+webserver_title
+→ Ansible Workshop - stud01
+
+webserver_config_file
+→ /etc/httpd/conf.d/stud01.conf
+```
+
+Another student running exactly the same role automatically gets different paths.
+
+No student number needs to be hard-coded in the role.
+
+---
+
+## 15.3 Inspect the role tasks
+
+Open:
+
+```bash
+cat roles/webserver/tasks/main.yml
+```
+
+The role should contain tasks similar to:
+
+```yaml
+---
+- name: Install Apache
+  ansible.builtin.package:
+    name: "{{ webserver_package }}"
+    state: present
+
+- name: Ensure Apache is enabled and running
+  ansible.builtin.service:
+    name: "{{ webserver_service }}"
+    enabled: true
+    state: started
+
+- name: Create student-specific document root
+  ansible.builtin.file:
+    path: "{{ webserver_document_root }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy student-specific website
+  ansible.builtin.template:
+    src: index.html.j2
+    dest: "{{ webserver_document_root }}/index.html"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy student-specific Apache configuration
+  ansible.builtin.template:
+    src: student-site.conf.j2
+    dest: "{{ webserver_config_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Apache
+```
+
+Notice the difference between shared and student-specific resources.
+
+These tasks are shared:
+
+```yaml
+- name: Install Apache
+- name: Ensure Apache is enabled and running
+```
+
+But these resources include:
+
+```text
+{{ ansible_user }}
+```
+
+and are therefore unique for every student:
+
+```text
+/var/www/html/stud01
+/etc/httpd/conf.d/stud01.conf
+```
+
+---
+
+## 15.4 Inspect the website template
+
+Open:
+
+```bash
+cat roles/webserver/templates/index.html.j2
+```
+
+A possible initial version is:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>{{ webserver_title }}</title>
+</head>
+<body>
+
+<h1>{{ webserver_title }}</h1>
+
+<p>This website is managed by Ansible.</p>
+
+<ul>
+  <li>Student: {{ ansible_user }}</li>
+  <li>Inventory host: {{ inventory_hostname }}</li>
+  <li>Operating system: {{ ansible_facts['distribution'] }}</li>
+  <li>OS version: {{ ansible_facts['distribution_version'] }}</li>
+  <li>Architecture: {{ ansible_facts['architecture'] }}</li>
+</ul>
+
+</body>
+</html>
+```
+
+Because facts are used in the template, the role-runner playbook must gather facts.
+
+---
+
+## 15.5 Inspect the Apache configuration template
+
+Open:
+
+```bash
+cat roles/webserver/templates/student-site.conf.j2
+```
+
+It should contain:
+
+```apache
+# Managed by Ansible for {{ ansible_user }}
+
+<Directory "{{ webserver_document_root }}">
+    Options -Indexes
+    AllowOverride None
+    Require all granted
+</Directory>
+```
+
+Every student creates their own configuration file.
+
+For example:
+
+```text
+/etc/httpd/conf.d/stud01.conf
+/etc/httpd/conf.d/stud02.conf
+/etc/httpd/conf.d/stud03.conf
+```
+
+This avoids students overwriting each other's Apache configuration.
+
+---
+
+## 15.6 Inspect the handler
+
+Open:
+
+```bash
+cat roles/webserver/handlers/main.yml
+```
+
+The handler should contain:
+
+```yaml
+---
+- name: Restart Apache
+  ansible.builtin.service:
+    name: "{{ webserver_service }}"
+    state: restarted
+```
+
+Notice that the handler is only notified when the Apache configuration file changes.
+
+Changing a static HTML page does **not** require Apache to restart.
+
+This is important:
+
+> Handlers should be triggered only when the changed resource actually requires the associated action.
+
+---
+
+## 15.7 Inspect the role-runner playbook
+
+Open:
+
+```bash
+cat playbooks/50_webserver_role.yml
+```
+
+It should remain small:
+
+```yaml
+---
+- name: Configure student webserver
+  hosts: managed
+  become: true
+  gather_facts: true
+
+  roles:
+    - webserver
+```
+
+The top-level playbook decides:
+
+- which hosts to target;
+- whether privilege escalation is required;
+- which roles should execute.
+
+The implementation belongs inside the role.
+
+---
+
+# 15.8 Run the role against one host
+
+Always test a new configuration against a limited target first.
+
+Run:
+
+```bash
+ansible-playbook playbooks/50_webserver_role.yml \
+  --limit rhel1
+```
+
+The first student to execute the role may see Apache installation and service tasks report:
+
+```text
+changed
+```
+
+Students running afterwards may see:
+
+```text
+ok
+```
+
+because Apache is already installed and running.
+
+However, your student-specific directory and configuration should still be created.
+
+---
+
+## 15.9 Verify your website files
+
+For `stud01`, verify the document root:
+
+```bash
+ansible rhel1 \
+  -b \
+  -m ansible.builtin.command \
+  -a "ls -ld /var/www/html/$USER"
+```
+
+Then inspect your website:
+
+```bash
+ansible rhel1 \
+  -b \
+  -m ansible.builtin.command \
+  -a "cat /var/www/html/$USER/index.html"
+```
+
+Check your Apache configuration:
+
+```bash
+ansible rhel1 \
+  -b \
+  -m ansible.builtin.command \
+  -a "cat /etc/httpd/conf.d/$USER.conf"
+```
+
+For `stud01`, these commands inspect:
+
+```text
+/var/www/html/stud01/index.html
+/etc/httpd/conf.d/stud01.conf
+```
+
+---
+
+# 15.10 Access your website
+
+From `rhelmain`, use:
+
+```bash
+curl http://rhel1/$USER/
+```
+
+For `stud01`, this is equivalent to:
+
+```bash
+curl http://rhel1/stud01/
+```
+
+You should see your generated HTML.
+
+You can also explicitly test the HTTP status:
+
+```bash
+curl -I http://rhel1/$USER/
+```
+
+Look for:
+
+```text
+HTTP/1.1 200 OK
+```
+
+---
+
+# 15.11 Run the role against all managed hosts
+
+Once the test on `rhel1` works, run:
+
+```bash
+ansible-playbook playbooks/50_webserver_role.yml
+```
+
+The role now configures your website on:
+
+```text
+rhel1
+rhel2
+rhel3
+```
+
+Verify:
+
+```bash
+curl http://rhel1/$USER/
+curl http://rhel2/$USER/
+curl http://rhel3/$USER/
+```
+
+All three systems should return your student-specific website.
+
+---
+
+# 15.12 Customize your website
+
+Now modify:
+
+```bash
+vi roles/webserver/templates/index.html.j2
+```
+
+Customize your website.
+
+Add at least two of the following:
+
+- your student username;
+- total system memory;
+- kernel version;
+- processor architecture;
+- a custom heading;
+- a short workshop message.
+
+For example, you could add:
+
+```html
+<p>
+  This page was deployed by {{ ansible_user }}
+  using an Ansible role.
+</p>
+```
+
+Do not hard-code:
+
+```text
+stud01
+```
+
+Use:
+
+```text
+{{ ansible_user }}
+```
+
+instead.
+
+Run:
+
+```bash
+ansible-playbook playbooks/50_webserver_role.yml
+```
+
+Verify:
+
+```bash
+curl http://rhel1/$USER/
+```
+
+Your changes should appear immediately.
+
+---
+
+## Question
+
+Did Apache restart because you changed `index.html`?
+
+It should **not**.
+
+A static HTML file does not require an Apache restart.
+
+This demonstrates why handlers should only be attached to tasks where a service reload or restart is actually required.
+
+---
+
+# 15.13 Handler experiment
+
+Now we will intentionally change an Apache configuration file.
+
+Open:
+
+```bash
+vi roles/webserver/templates/student-site.conf.j2
+```
+
+Add a comment, for example:
+
+```apache
+# Student website configuration for {{ ansible_user }}
+```
+
+The complete file might now look like:
+
+```apache
+# Managed by Ansible for {{ ansible_user }}
+# Student website configuration for {{ ansible_user }}
+
+<Directory "{{ webserver_document_root }}">
+    Options -Indexes
+    AllowOverride None
+    Require all granted
+</Directory>
+```
+
+Run:
+
+```bash
+ansible-playbook playbooks/50_webserver_role.yml
+```
+
+The task:
+
+```text
+Deploy student-specific Apache configuration
+```
+
+should report:
+
+```text
+changed
+```
+
+and notify:
+
+```text
+Restart Apache
+```
+
+At the end of the play, the handler should execute.
+
+---
+
+## 15.14 Run it again
+
+Without modifying anything, run:
+
+```bash
+ansible-playbook playbooks/50_webserver_role.yml
+```
+
+The Apache configuration is already correct.
+
+Therefore:
+
+```text
+Deploy student-specific Apache configuration
+```
+
+should report:
+
+```text
+ok
+```
+
+and the handler should **not** execute.
+
+This demonstrates the relationship:
+
+```text
+configuration changes
+        ↓
+task reports changed
+        ↓
+notify
+        ↓
+handler executes
+```
+
+If nothing changes:
+
+```text
+configuration already correct
+        ↓
+task reports ok
+        ↓
+no notification
+        ↓
+handler does not execute
+```
+
+---
+
+# 15.15 Observe the shared environment
+
+You are working on shared systems.
+
+For example, after several students have run the role, `rhel1` may contain:
+
+```text
+/var/www/html/stud01/
+/var/www/html/stud02/
+/var/www/html/stud03/
+/var/www/html/stud04/
+...
+```
+
+and:
+
+```text
+/etc/httpd/conf.d/stud01.conf
+/etc/httpd/conf.d/stud02.conf
+/etc/httpd/conf.d/stud03.conf
+/etc/httpd/conf.d/stud04.conf
+...
+```
+
+Each student owns a separate automation namespace.
+
+The shared resources remain:
+
+```text
+httpd package
+httpd service
+```
+
+This is a common automation design principle:
+
+> Shared infrastructure can be managed centrally, while user-specific resources should use unique names derived from variables.
+
+---
+
+# 15.16 Optional student customization
+
+Add another default variable to:
+
+```text
+roles/webserver/defaults/main.yml
+```
+
+For example:
+
+```yaml
+webserver_message: "Welcome to my Ansible-managed website"
+```
+
+Use it inside:
+
+```text
+roles/webserver/templates/index.html.j2
+```
+
+with:
+
+```jinja2
+{{ webserver_message }}
+```
+
+Run the role again and verify the result.
+
+This demonstrates one of the main advantages of roles:
+
+> Implementation belongs in tasks and templates, while customizable values belong in variables.
+
+---
+
+# 15.17 Commit your role changes
+
+Review your changes:
+
+```bash
+git status
+```
+
+Inspect the differences:
+
+```bash
+git diff
+```
+
+Stage them:
+
+```bash
+git add roles/webserver
+```
+
+Commit:
+
+```bash
+git commit -m "Customize student webserver role"
+```
+
+View the recent history:
+
+```bash
+git log --oneline --decorate -5
+```
+
+You now have a Git checkpoint containing your first customized Ansible role.
+
+# 16. Templates
+
+## 16.1 Template example 1: customized HTML page
+
+Open:
+
+```bash
+vi roles/webserver/templates/index.html.j2
+```
+
+The same template is rendered separately for every managed node using facts and variables.
+
+Customize it to display all of the following:
+
+- student username (`ansible_user`);
+- kernel version;
+- default IPv4 address;
+- processor count;
+- deployment environment.
+
+Run:
+
+```bash
+ansible-playbook site.yml
+```
+
+Test each web server using its actual IP address:
+
+```bash
+curl http://<RHEL1_IP>/
+curl http://<RHEL2_IP>/
+curl http://<RHEL3_IP>/
+```
+
+## 16.2 Template example 2: application configuration
+
+Inspect:
+
+```bash
+cat roles/training_app/defaults/main.yml
+cat roles/training_app/templates/training-app.conf.j2
+cat roles/training_app/tasks/main.yml
+```
+
+The three hosts already have different `training_app` dictionaries in:
+
+```text
+inventory/host_vars/rhel1.yml
+inventory/host_vars/rhel2.yml
+inventory/host_vars/rhel3.yml
+```
+
+Run:
+
+```bash
+ansible-playbook site.yml
+```
+
+Compare the generated files:
+
+```bash
+ansible managed -b -m ansible.builtin.command -a "cat /etc/training-app.conf"
+```
+
+### Customization
+
+Add:
+
+```yaml
+training_app_log_level: info
+```
+
+to the role defaults and render it into the template under a `[logging]` section.
+
+Override `training_app_log_level` for `rhel3` to `warning`.
+
+Run again and compare the hosts.
+
+---
+
+# 17. Running command and shell tasks inside a role
+
+Inspect:
+
+```bash
+cat roles/system_report/tasks/main.yml
+```
+
+This role demonstrates both `ansible.builtin.command` and `ansible.builtin.shell`.
+
+Use `command` when you simply need to execute a program. Use `shell` only when you need shell features such as pipes, redirects, compound expressions or shell expansion.
+
+Run:
+
+```bash
+ansible-playbook site.yml
+```
+
+The role:
+
+1. runs `uptime` with `command`;
+2. stores the output with `register`;
+3. displays it with `debug`;
+4. uses a shell pipeline to find large entries under `/etc`;
+5. uses another shell pipeline to determine root filesystem utilization;
+6. compares the result to `system_report_disk_warning` with a conditional.
+
+## 17.1 Customize the threshold
+
+Edit:
+
+```bash
+vi roles/system_report/defaults/main.yml
+```
+
+Set:
+
+```yaml
+system_report_disk_warning: 1
+```
+
+Run the role and observe the warning. Restore the value afterwards.
+
+## 17.2 Shell safety exercise
+
+Find the `set -o pipefail` lines in the role.
+
+Discuss why checking pipeline failures is useful in automation.
+
+---
+
+# 18. Check mode, diff mode and limiting execution
+
+Before a potentially disruptive change, try check mode:
+
+```bash
+ansible-playbook site.yml --check
+```
+
+Add differences where supported:
+
+```bash
+ansible-playbook site.yml --check --diff
+```
+
+Modify a template and run `--check --diff` again without applying the change.
+
+Limit a play to one host:
+
+```bash
+ansible-playbook site.yml --limit rhel1
+```
+
+Limit it to two:
+
+```bash
+ansible-playbook site.yml --limit 'rhel1,rhel2'
+```
+
+This is an important operational practice: validate on a smaller target set before broad rollout.
+
+---
+
+# 19. Final challenge: professional `server_baseline` role
+
+The role skeleton already exists at:
+
+```text
+roles/server_baseline/
+```
+
+Do **not** put the implementation into `site.yml`. All configuration belongs inside the role.
+
+## Requirements
+
+### Packages
+
+Install:
+
+```text
+curl
+vim-enhanced
+tar
+tree
+```
+
+The list should be defined as a variable.
+
+### Directories
+
+Create:
+
+```text
+/opt/company
+/opt/company/scripts
+/opt/company/config
+```
+
+Use a loop.
+
+### Accounts
+
+Create three application users using a list of dictionaries and a loop. Include at least:
+
+- username;
+- shell;
+- comment;
+- whether a home directory should be created.
+
+### MOTD template
+
+Replace `roles/server_baseline/templates/motd.j2` with a real template and deploy it to `/etc/motd`.
+
+The rendered file must contain:
+
+- hostname;
+- operating system;
+- OS version;
+- default IP address;
+- environment;
+- the text `Managed by Ansible - manual changes may be overwritten`.
+
+### Conditional environment banner
+
+If the host's environment is `production`, add:
+
+```text
+*** PRODUCTION SYSTEM ***
+```
+
+Otherwise add:
+
+```text
+Non-production environment
+```
+
+Implement the condition in the template or role tasks and be prepared to explain your choice.
+
+### Register
+
+Run a command that determines system uptime and store the result using `register`.
+
+Display the result with `debug`.
+
+### Shell
+
+Add one useful read-only system-reporting task that genuinely requires shell functionality. It must:
+
+- use `ansible.builtin.shell`;
+- not change the host;
+- use `changed_when: false`;
+- store its output using `register`.
+
+### Add the role to the site playbook
+
+Uncomment:
+
+```yaml
+- server_baseline
+```
+
+in `site.yml`.
+
+## Validate your work
+
+Check syntax:
+
+```bash
+ansible-playbook site.yml --syntax-check
+```
+
+Review possible changes:
+
+```bash
+ansible-playbook site.yml --check --diff
+```
+
+Run against one host:
+
+```bash
+ansible-playbook site.yml --limit rhel1
+```
+
+Then all hosts:
+
+```bash
+ansible-playbook site.yml
+```
+
+Run it immediately a second time:
+
+```bash
+ansible-playbook site.yml
+```
+
+Investigate every task that still reports `changed` on the second run. Decide whether the change is legitimate or whether the task can be made more idempotent.
+
+---
+
+# 20. Final Git delivery
+
+Review your work:
+
+```bash
+git status
+git diff
+```
+
+Commit the role:
+
+```bash
+git add .
+git commit -m "Implement server baseline role"
+```
+
+Review your commit history:
+
+```bash
+git log --oneline --decorate
+```
+
+A professional project should contain logical commits rather than one giant end-of-day commit.
+
+Suggested milestones:
+
+```text
+Configure student inventory
+Customize variable and module exercises
+Implement webserver and templates
+Implement system reporting
+Implement server baseline role
+```
+
+---
+
+# 21. End-of-day self-check
+
+You should now be able to answer all of these questions without looking at the solutions:
+
+1. What is the difference between an ad-hoc command and a playbook?
+2. What does `ansible.builtin.ping` actually test?
+3. Where does this project get its inventory path from?
+4. What is the purpose of SSH public-key authentication?
+5. What is the difference between a YAML list and dictionary?
+6. How do you reference an item in a list?
+7. How do you reference a key in a dictionary?
+8. Why prefer a module such as `package` or `file` over a shell command?
+9. What is an Ansible collection?
+10. What does `when` do?
+11. What does `register` do?
+12. What are Ansible facts?
+13. When are loops useful?
+14. Why can passing an entire package list be better than looping over it?
+15. What belongs in a role's `defaults/`, `tasks/`, `handlers/`, and `templates/` directories?
+16. Why should top-level playbooks remain small once roles are used?
+17. What is a Jinja2 template used for?
+18. When should you use `shell` instead of `command`?
+19. What is idempotency?
+20. Why are `--check`, `--diff`, and `--limit` useful before production rollout?
+
+---
+
+# Command cheat sheet
+
+```bash
+# Version and configuration
+ansible --version
+ansible-config dump --only-changed
+
+# Module help
+ansible-doc ansible.builtin.copy
+ansible-doc ansible.builtin.file
+ansible-doc ansible.builtin.package
+
+# Inventory
+ansible-inventory --graph
+ansible-inventory --list
+ansible managed --list-hosts
+
+# Connectivity
+ansible managed -m ansible.builtin.ping
+
+# Ad-hoc command
+ansible managed -m ansible.builtin.command -a "hostname"
+
+# Privileged command
+ansible managed -b -m ansible.builtin.command -a "id"
+
+# Playbook
+ansible-playbook site.yml
+
+# Syntax validation
+ansible-playbook site.yml --syntax-check
+
+# Limit execution
+ansible-playbook site.yml --limit rhel1
+
+# Check/diff
+ansible-playbook site.yml --check
+ansible-playbook site.yml --check --diff
+
+# Verbosity
+ansible-playbook site.yml -v
+ansible-playbook site.yml -vv
+
+# Facts
+ansible managed -m ansible.builtin.setup
+
+# Collections
+ansible-galaxy collection list
+ansible-galaxy collection install -r requirements.yml -p ./collections
+
+# Create a role
+ansible-galaxy role init roles/example
+
+# Git
+git status
+git diff
+git add .
+git commit -m "Description"
+git log --oneline
+```
+
+---
+
+# Repository structure
+
+```text
+ansible-deep-dive-workshop/
+├── ansible.cfg
+├── .gitignore
+├── README.md
+├── INSTRUCTOR.md
+├── requirements.yml
+├── site.yml
+├── inventory/
+│   ├── hosts.yml
+│   ├── group_vars/
+│   │   └── managed.yml
+│   └── host_vars/
+│       ├── rhel1.yml
+│       ├── rhel2.yml
+│       └── rhel3.yml
+├── vars/
+│   └── webserver.yml
+├── playbooks/
+│   ├── 01_ping.yml
+│   ├── 02_hostname.yml
+│   ├── 03_directory.yml
+│   ├── 04_file.yml
+│   ├── 10_variables.yml
+│   ├── 11_lists.yml
+│   ├── 12_dictionary.yml
+│   ├── 13_varfile.yml
+│   ├── 20_packages.yml
+│   ├── 21_service.yml
+│   ├── 22_files.yml
+│   ├── 23_users.yml
+│   ├── 24_lineinfile.yml
+│   ├── 25_firewall.yml
+│   ├── 26_ini.yml
+│   ├── 30_condition_basic.yml
+│   ├── 31_condition_string.yml
+│   ├── 32_condition_multiple.yml
+│   ├── 32b_condition_advanced.yml
+│   ├── 33_register.yml
+│   ├── 33b_register_condition.yml
+│   ├── 34_facts.yml
+│   ├── 40_loop_basic.yml
+│   ├── 41_loop_packages.yml
+│   └── 42_loop_dictionary.yml
+└── roles/
+    ├── webserver/
+    ├── training_app/
+    ├── system_report/
+    └── server_baseline/
+```
+
+Have fun automating, and remember: if you perform the same manual change more than once, ask whether Ansible should be doing it for you.

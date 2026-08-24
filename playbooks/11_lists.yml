@@ -19,6 +19,3 @@
       ansible.builtin.debug:
         msg: "The first package is {{ packages[0] }}"
 
-    - name: Display third package
-      ansible.builtin.debug:
-        msg: "The third package is {{ packages[2] }}"
