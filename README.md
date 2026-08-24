@@ -5623,7 +5623,7 @@ ansible managed -m ansible.builtin.command -a "getent passwd auditor${STUDENT_ID
 
 ---
 
-### Student challenge 1 – Add another user
+### Challenge 1 – Add another user
 
 Add a **fourth dictionary** to:
 
@@ -5689,7 +5689,7 @@ ansible managed -m ansible.builtin.command -a "getent passwd support${STUDENT_ID
 
 ---
 
-### Student challenge 2 – Customize the comments
+### Challenge 2 – Customize the comments
 
 Change the `comment` value for every user so that it also contains your Ansible username.
 
@@ -5755,39 +5755,198 @@ meta/        role metadata
 The supplied repository already contains reference roles. To learn how Ansible generates one, create a disposable role:
 
 ```bash
-ansible-galaxy role init /tmp/example_role
-find /tmp/example_role -maxdepth 2 -type f | sort
-rm -rf /tmp/example_role
+ansible-galaxy role init ~/example_role
+find ~/example_role -maxdepth 2 -type f | sort
+rm -rf ~/example_role
 ```
 
-## 14.2 Initialize your own Git history
+## 14.2 Create your own Git branch and first commit
 
-Because you cloned the instructor repository, it may already have Git history. For the workshop, create your own branch:
+Because you cloned the instructor repository, it already contains Git history.
 
-```bash
+For the workshop, create your own branch:
+
+```bash id="8y8v03"
 git switch -c studXX-workshop
 ```
 
 Replace `studXX` with your username.
 
-Check status:
+For example:
 
-```bash
+```bash id="a83q5m"
+git switch -c stud10-workshop
+```
+
+Verify your current branch:
+
+```bash id="mqkjma"
+git branch --show-current
+```
+
+You should see your student-specific branch, for example:
+
+```text id="3bnf5s"
+stud10-workshop
+```
+
+---
+
+### Configure your Git identity
+
+Before Git can create commits, it needs to know who created them.
+
+Check the currently configured identity:
+
+```bash id="fb7zxl"
+git config user.name
+git config user.email
+```
+
+If these commands return no values, configure an identity for this repository.
+
+Use your student account as the name:
+
+```bash id="gvvdrp"
+git config user.name "$USER"
+```
+
+For the workshop, use a local example email address:
+
+```bash id="sq1ip4"
+git config user.email "$USER@ansible-workshop.local"
+```
+
+For `stud10`, this results in:
+
+```text id="q4qf8x"
+user.name  = stud10
+user.email = stud10@ansible-workshop.local
+```
+
+Verify:
+
+```bash id="tbttno"
+git config user.name
+git config user.email
+```
+
+You can also display both settings together:
+
+```bash id="mh5fs3"
+git config --local --list
+```
+
+> We intentionally do not use `--global`. The configuration should apply only to your workshop repository and should not modify your general Git configuration.
+
+---
+
+### Check your repository status
+
+Run:
+
+```bash id="pvsl99"
 git status
 ```
 
-Make a small documentation change, then:
+Git shows which files have been modified since the repository was cloned.
 
-```bash
+By this point in the workshop, you may already have changed files such as:
+
+```text id="muj8yq"
+inventory/group_vars/managed.yml
+requirements.yml
+playbooks/...
+```
+
+---
+
+### Stage your changes
+
+Add your changes to the Git staging area:
+
+```bash id="aykqla"
 git add .
+```
+
+Check again:
+
+```bash id="dl0tnp"
+git status
+```
+
+Notice how the files are now listed under:
+
+```text id="3qgj2v"
+Changes to be committed:
+```
+
+This means the changes are staged and will be included in the next commit.
+
+---
+
+### Create your first commit
+
+Now create a commit:
+
+```bash id="ptu2pi"
 git commit -m "Configure student workshop environment"
 ```
 
-View history:
+You should now see output indicating that a new commit was created.
 
-```bash
+---
+
+### View the Git history
+
+Run:
+
+```bash id="12tf0p"
 git log --oneline --decorate -5
 ```
+
+Your new commit should appear at the top.
+
+You should also see your current branch pointing to this commit, for example:
+
+```text id="2g8w5q"
+a1b2c3d (HEAD -> stud10-workshop) Configure student workshop environment
+```
+
+The exact commit ID will be different.
+
+---
+
+### Understand what you just did
+
+You have now completed the basic Git workflow:
+
+```text id="ytghxb"
+Modify files
+     ↓
+git status
+     ↓
+git add .
+     ↓
+Staging area
+     ↓
+git commit
+     ↓
+Git history
+```
+
+Your changes are now stored as a commit in your own student branch.
+
+From this point onward, commit meaningful changes as you develop and customize your Ansible roles.
+
+For example:
+
+```bash id="7yd3fd"
+git add .
+git commit -m "Customize webserver role"
+```
+
+This gives you a history of how your Ansible project evolves during the remaining exercises.
 
 ## 14.3 Understand the top-level playbook
 
