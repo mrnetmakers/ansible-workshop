@@ -5026,10 +5026,7 @@ ansible-playbook playbooks/26_ini.yml
 Verify:
 
 ```bash id="v3nm4r"
-ansible managed \
-  -b \
-  -m ansible.builtin.command \
-  -a "cat /opt/training/$USER/training-app.conf"
+ansible managed -b -m ansible.builtin.command -a "cat /opt/training/$USER/training-app.conf"
 ```
 
 ---
@@ -5104,10 +5101,7 @@ Use:
 Run your playbook and verify the archive:
 
 ```bash id="i2t5ar"
-ansible managed \
-  -b \
-  -m ansible.builtin.command \
-  -a "ls -lh /tmp/$USER-training.tar.gz"
+ansible managed -b -m ansible.builtin.command -a "ls -lh /tmp/$USER-training.tar.gz"
 ```
 
 ---
@@ -5185,10 +5179,7 @@ ansible-playbook playbooks/28_private_key.yml
 Verify:
 
 ```bash id="4m5v5c"
-ansible managed \
-  -b \
-  -m ansible.builtin.command \
-  -a "ls -l /opt/training/$USER/tls/server.key"
+ansible managed -b -m ansible.builtin.command -a "ls -l /opt/training/$USER/tls/server.key"
 ```
 
 Run the playbook a second time and observe whether the key is recreated.
@@ -5226,10 +5217,7 @@ stud01.training.example
 Run the playbook and verify:
 
 ```bash id="vmm9vi"
-ansible managed \
-  -b \
-  -m ansible.builtin.command \
-  -a "ls -l /opt/training/$USER/tls/"
+ansible managed -b -m ansible.builtin.command -a "ls -l /opt/training/$USER/tls/"
 ```
 
 You should now have both:
@@ -5239,335 +5227,7 @@ server.key
 server.csr
 ```
 
----
-
-# 9.7 Collection 4 – `community.dns`
-
-The `community.dns` collection provides plugins and modules for working with DNS services and DNS-related data.
-
-Unlike our previous exercises, we do **not** have a dedicated DNS service for every student.
-
-Therefore, this exercise focuses on discovering collection functionality without modifying external DNS infrastructure.
-
-This is an important Ansible skill too:
-
-> Before using a collection, understand what infrastructure and credentials its modules require.
-
-Explore:
-
-```bash id="ckzh5d"
-ansible-doc -l | grep '^community.dns' | head -30
-```
-
----
-
-## Example 1 – Explore DNS lookup capabilities
-
-Search for lookup plugins:
-
-```bash id="7em0fh"
-ansible-doc -t lookup -l | grep community.dns
-```
-
-Pick one of the DNS lookup plugins and inspect its documentation.
-
-For example, depending on the installed collection version:
-
-```bash id="beyf03"
-ansible-doc -t lookup community.dns.lookup
-```
-
-Read:
-
-```text id="xsfvx3"
-SYNOPSIS
-OPTIONS
-EXAMPLES
-```
-
-Answer:
-
-1. What information can the plugin retrieve?
-2. Does it run on the control node or managed host?
-3. Does it modify DNS?
-4. Which Python dependencies does it require?
-
----
-
-## Example 2 – Find DNS provider modules
-
-Run:
-
-```bash id="g8s48l"
-ansible-doc -l | grep '^community.dns'
-```
-
-Identify at least two DNS providers or DNS-related services supported by the collection.
-
-For one module, inspect:
-
-```bash id="i2tyeu"
-ansible-doc <fully-qualified-module-name>
-```
-
-Answer:
-
-1. What credentials would you need?
-2. Which DNS records can it manage?
-3. Why should we **not** execute this module against arbitrary public DNS infrastructure during the workshop?
-
-This exercise demonstrates that installing a collection does not mean every module can or should be executed in your current environment.
-
----
-
-# 9.8 Collection 5 – `community.postgresql`
-
-The `community.postgresql` collection provides modules for automating PostgreSQL.
-
-Examples include managing:
-
-- databases
-- database users
-- privileges
-- schemas
-- extensions
-- queries
-
-Explore:
-
-```bash id="7rm78q"
-ansible-doc -l | grep '^community.postgresql' | head -30
-```
-
-We do not need to install or configure a shared PostgreSQL server for this exercise.
-
-Instead, you will explore how you **would** automate one.
-
----
-
-## Example 1 – Explore database management
-
-Inspect:
-
-```bash id="o4tljz"
-ansible-doc community.postgresql.postgresql_db
-```
-
-Find the parameter used to specify:
-
-- database name;
-- desired state;
-- database owner.
-
-Now imagine each student had to create a database.
-
-A shared environment should not use:
-
-```text id="y44xzs"
-training
-```
-
-for everyone.
-
-Instead, we would use:
-
-```text id="7l2v8h"
-training_stud01
-training_stud02
-training_stud03
-...
-```
-
-Write down a task that would create:
-
-```text id="0y1g31"
-training_{{ ansible_user }}
-```
-
-Do not execute it.
-
----
-
-## Example 2 – Explore PostgreSQL users
-
-Inspect:
-
-```bash id="1hk28u"
-ansible-doc community.postgresql.postgresql_user
-```
-
-Find the parameters for:
-
-```text id="60ynbd"
-name
-password
-state
-```
-
-Write a sample task that would create:
-
-```text id="sf15gu"
-app_studXX
-```
-
-Again, derive the name from:
-
-```text id="9p7i5n"
-{{ ansible_user }}
-```
-
-Do not execute the task because the workshop systems are not providing a student-specific PostgreSQL environment.
-
-Question:
-
-> What additional software or Python library does the module documentation say is required on the system where the PostgreSQL module executes?
-
-This is an important lesson: installing an Ansible collection does not automatically install every external dependency required by its modules.
-
----
-
-# 9.9 Collection 6 – `community.library_inventory_filtering_v1`
-
-Not every collection exists to configure operating-system resources.
-
-Some collections provide plugins or functionality that extends Ansible itself.
-
-Inspect the collection:
-
-```bash id="2z5wqt"
-ansible-doc -l | grep 'community.library_inventory_filtering'
-```
-
-Also inspect the installed files:
-
-```bash id="dwx24p"
-find collections/ansible_collections/community/library_inventory_filtering_v1 \
-  -maxdepth 2 \
-  -type f | head -20
-```
-
----
-
-## Example 1 – Identify what the collection provides
-
-Use:
-
-```bash id="u23m60"
-ansible-doc -l
-```
-
-and the collection documentation to determine:
-
-1. Does this collection primarily configure Linux services?
-2. What type of Ansible functionality does it provide?
-3. Why might another collection depend on it?
-
----
-
-## Example 2 – Inspect collection dependencies
-
-Ansible collections can depend on other collections.
-
-Look inside the installed collection metadata.
-
-Start with:
-
-```bash id="x56r4v"
-find collections/ansible_collections \
-  -name MANIFEST.json | head
-```
-
-Inspect one:
-
-```bash id="j2zkwm"
-less collections/ansible_collections/community/general/MANIFEST.json
-```
-
-Also inspect:
-
-```bash id="rjbhxf"
-ansible-galaxy collection list -p ./collections
-```
-
-Question:
-
-> Why is dependency management important when sharing an Ansible project with other administrators?
-
----
-
-# 9.10 Understand `requirements.yml`
-
-Instead of telling another administrator:
-
-```text id="wr9tlq"
-Please install these six collections manually...
-```
-
-we store project dependencies as code:
-
-```yaml id="5zq9dx"
----
-collections:
-  - name: ansible.posix
-  - name: community.general
-  - name: community.crypto
-  - name: community.dns
-  - name: community.library_inventory_filtering_v1
-  - name: community.postgresql
-```
-
-Another administrator can then run:
-
-```bash id="dbp78q"
-ansible-galaxy collection install \
-  -r requirements.yml \
-  -p ./collections
-```
-
-This idea will become even more important later when we prepare our Ansible project for professional delivery through Git.
-
----
-
-# 9.11 Student challenge – Discover a collection
-
-Choose **one collection** from this unit that interests you.
-
-Do not use a module that we already explored.
-
-Start with:
-
-```bash id="luhbcu"
-ansible-doc -l
-```
-
-Filter for your collection, for example:
-
-```bash id="v6nckw"
-ansible-doc -l | grep '^community.general'
-```
-
-Select one module and inspect it:
-
-```bash id="p7i6ql"
-ansible-doc <module-FQCN>
-```
-
-Prepare a short explanation for another student covering:
-
-1. What does the module do?
-2. What are its most important parameters?
-3. Does it require root privileges?
-4. Does it require additional Python packages or external software?
-5. Would it be safe to execute on our shared `rhel1`–`rhel3` systems?
-6. How would you make resources student-specific if multiple students used the module simultaneously?
-
-If it is safe and the required infrastructure exists, create a small playbook and test it.
-
-Otherwise, only prepare the playbook without executing it.
-
----
-
-# 9.12 What did we learn?
+# 9.7 What did we learn?
 
 In this unit, you worked with several different collections:
 
@@ -5576,9 +5236,6 @@ In this unit, you worked with several different collections:
 | `ansible.posix` | Linux/POSIX administration |
 | `community.general` | General-purpose community modules |
 | `community.crypto` | Keys, CSRs and certificates |
-| `community.dns` | DNS automation |
-| `community.postgresql` | PostgreSQL automation |
-| `community.library_inventory_filtering_v1` | Ansible plugin/inventory functionality |
 
 You learned that collections extend Ansible beyond:
 
@@ -5598,7 +5255,6 @@ For example:
 ansible.posix.firewalld
 community.general.ini_file
 community.crypto.openssl_privatekey
-community.postgresql.postgresql_db
 ```
 
 You also learned an important distinction:
@@ -5624,10 +5280,6 @@ app_{{ ansible_user }}
 ```
 
 This makes your automation safer and more reusable in shared environments.
-
-## Next
-
-In the next unit, you will use **conditionals** to make Ansible decide whether a task should execute based on variables, facts, and previous results.
 
 # 10. Conditionals
 
@@ -5801,14 +5453,280 @@ Replace the loop with the list-based version and compare the output.
 
 ## 13.3 Loop over dictionaries
 
-```bash
+Lists can also contain dictionaries. This is very useful when every item has several properties.
+
+In this exercise, you will create multiple users. Because the managed hosts are shared by all students, every username must contain your individual **student ID**.
+
+For example:
+
+```text id="f3n4ly"
+Student     Users
+-------     -------------------------------
+stud01      developer01, operator01, auditor01
+stud02      developer02, operator02, auditor02
+stud10      developer10, operator10, auditor10
+```
+
+This prevents students from modifying each other's accounts.
+
+---
+
+### Inspect the playbook
+
+Open:
+
+```bash id="x6ezxl"
 cat playbooks/42_loop_dictionary.yml
+```
+
+The playbook contains a list of dictionaries describing several users.
+
+Modify it so it looks similar to:
+
+```yaml id="9iz7du"
+---
+- name: Create multiple student-specific users
+  hosts: managed
+  become: true
+
+  vars:
+    student_id: "{{ ansible_user | regex_replace('^stud', '') }}"
+
+    training_users:
+      - name: developer
+        shell: /bin/bash
+        comment: "Development user"
+
+      - name: operator
+        shell: /bin/bash
+        comment: "Operations user"
+
+      - name: auditor
+        shell: /sbin/nologin
+        comment: "Audit user"
+
+  tasks:
+    - name: Create training users
+      ansible.builtin.user:
+        name: "{{ item.name }}{{ student_id }}"
+        shell: "{{ item.shell }}"
+        comment: "{{ item.comment }}"
+        state: present
+      loop: "{{ training_users }}"
+```
+
+---
+
+### Understand the student ID
+
+Your Ansible remote user is already stored in:
+
+```text id="52jbql"
+{{ ansible_user }}
+```
+
+For example:
+
+```text id="j99hxq"
+stud10
+```
+
+This expression:
+
+```text id="g16gcg"
+{{ ansible_user | regex_replace('^stud', '') }}
+```
+
+removes `stud` from the beginning of the string.
+
+The result is:
+
+```text id="vb0zvw"
+10
+```
+
+We store that result in:
+
+```yaml id="i8jpw3"
+student_id: "{{ ansible_user | regex_replace('^stud', '') }}"
+```
+
+The task can then combine:
+
+```text id="fdftle"
+item.name + student_id
+```
+
+For example:
+
+```text id="tm0o5g"
+developer + 10 → developer10
+operator  + 10 → operator10
+auditor   + 10 → auditor10
+```
+
+---
+
+### Run the playbook
+
+Execute:
+
+```bash id="8m80x6"
 ansible-playbook playbooks/42_loop_dictionary.yml
 ```
 
-Add a fourth user to the list.
+Ansible should loop over all three dictionaries and create three student-specific users on:
 
-Then add a dictionary key called `comment` to every user and use it in the `user` module task.
+```text id="a6njyw"
+rhel1
+rhel2
+rhel3
+```
+
+---
+
+### Verify the users
+
+You can derive your student ID in the shell as well:
+
+```bash id="jow19p"
+STUDENT_ID="${USER#stud}"
+```
+
+Check:
+
+```bash id="zm7p3e"
+echo "$STUDENT_ID"
+```
+
+For `stud10`, this returns:
+
+```text id="cnq79u"
+10
+```
+
+Now verify your users:
+
+```bash id="q3ofus"
+ansible managed -m ansible.builtin.command -a "getent passwd developer${STUDENT_ID}"
+```
+
+Try the other users:
+
+```bash id="q3ofus"
+ansible managed -m ansible.builtin.command -a "getent passwd operator${STUDENT_ID}"
+```
+
+```bash id="q3ofus"
+ansible managed -m ansible.builtin.command -a "getent passwd auditor${STUDENT_ID}"
+```
+
+---
+
+### Student challenge 1 – Add another user
+
+Add a **fourth dictionary** to:
+
+```yaml id="h2y4im"
+training_users:
+```
+
+Create a user with the base name:
+
+```text id="1yjf4k"
+support
+```
+
+Use:
+
+```text id="fbpkzs"
+/bin/bash
+```
+
+as its shell and choose a suitable comment.
+
+Do **not** include your student ID directly in the dictionary.
+
+In other words, do not write:
+
+```yaml id="m4psq8"
+name: support10
+```
+
+Instead, use:
+
+```yaml id="1ty2x5"
+name: support
+```
+
+The task should automatically append your student ID.
+
+For `stud10`, the resulting user should therefore be:
+
+```text id="8w0k96"
+support10
+```
+
+For `stud03`:
+
+```text id="ocgjj5"
+support03
+```
+
+Run the playbook again:
+
+```bash id="93o4y5"
+ansible-playbook playbooks/42_loop_dictionary.yml
+```
+
+Verify your new account:
+
+```bash id="8efqzb"
+STUDENT_ID="${USER#stud}"
+
+ansible managed -m ansible.builtin.command -a "getent passwd support${STUDENT_ID}"
+```
+
+---
+
+### Student challenge 2 – Customize the comments
+
+Change the `comment` value for every user so that it also contains your Ansible username.
+
+For example, the resulting comments for `stud10` could be:
+
+```text id="sy2dce"
+Development user managed by stud10
+Operations user managed by stud10
+Audit user managed by stud10
+Support user managed by stud10
+```
+
+Do not hard-code `stud10`.
+
+Use:
+
+```text id="67f2xk"
+{{ ansible_user }}
+```
+
+in the appropriate place.
+
+Run the playbook again and verify one account:
+
+```bash id="6e1hcm"
+ansible managed -m ansible.builtin.command -a "getent passwd developer${STUDENT_ID}"
+```
+
+Question:
+
+> What did Ansible report as `changed`, and why?
+
+Run the playbook once more without changing anything.
+
+Question:
+
+> Why should all four user items now report `ok`?
 
 ---
 

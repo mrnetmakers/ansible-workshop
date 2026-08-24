@@ -4,15 +4,15 @@
   gather_facts: false
 
   vars:
-    environment: development
+    deployment_environment: development
 
   tasks:
     - name: Development configuration
       ansible.builtin.debug:
         msg: Applying development settings
-      when: environment == "development"
+      when: deployment_environment == "development"
 
     - name: Production configuration
       ansible.builtin.debug:
         msg: Applying production settings
-      when: environment == "production"
+      when: deployment_environment == "production"
