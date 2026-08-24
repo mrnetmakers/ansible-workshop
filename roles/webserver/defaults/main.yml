@@ -1,6 +1,8 @@
 ---
 webserver_package: httpd
 webserver_service: httpd
-webserver_port: 80
-webserver_document_root: /var/www/html
-webserver_title: Ansible Training Server
+
+webserver_document_root: "/var/www/html/{{ ansible_user }}"
+webserver_title: "Ansible Workshop - {{ ansible_user }}"
+
+webserver_config_file: "/etc/httpd/conf.d/{{ ansible_user }}.conf"

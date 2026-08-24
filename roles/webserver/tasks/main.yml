@@ -1,20 +1,36 @@
 ---
-- name: Install web server
+- name: Install Apache
   ansible.builtin.package:
     name: "{{ webserver_package }}"
     state: present
 
-- name: Ensure web service is enabled and running
+- name: Ensure Apache is enabled and running
   ansible.builtin.service:
     name: "{{ webserver_service }}"
     enabled: true
     state: started
 
-- name: Deploy web page
+- name: Create student-specific document root
+  ansible.builtin.file:
+    path: "{{ webserver_document_root }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy student-specific website
   ansible.builtin.template:
     src: index.html.j2
     dest: "{{ webserver_document_root }}/index.html"
     owner: root
     group: root
     mode: "0644"
-  notify: Restart webserver
+
+- name: Deploy student-specific Apache configuration
+  ansible.builtin.template:
+    src: student-site.conf.j2
+    dest: "{{ webserver_config_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Apache
